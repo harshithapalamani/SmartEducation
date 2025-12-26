@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [role, setRole] = useState('student');
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     name: '',
   });
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -20,7 +22,10 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    // Store role in localStorage for demo
+    localStorage.setItem('userRole', role);
+    localStorage.setItem('userName', formData.name || formData.email.split('@')[0]);
+    navigate('/dashboard');
   };
 
   const toggleMode = () => {
@@ -29,12 +34,92 @@ const Login = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-wrapper">
-        <div className="login-card">
+    <div className="login-page">
+      <div className="login-left">
+        <div className="login-brand">
+          <Link to="/" className="brand-logo">
+            <div className="logo-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                <path d="M6 12v5c3 3 9 3 12 0v-5" />
+              </svg>
+            </div>
+            <span>Smart Education</span>
+          </Link>
+        </div>
+
+        <div className="login-illustration">
+          <div className="floating-cards">
+            <div className="float-card card-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+              <span>Smart Learning</span>
+            </div>
+            <div className="float-card card-2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+              <span>Track Progress</span>
+            </div>
+            <div className="float-card card-3">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span>AI Assistant</span>
+            </div>
+          </div>
+          <h2>Empowering Education with AI</h2>
+          <p>Join thousands of students and teachers using our platform to enhance learning experiences.</p>
+        </div>
+      </div>
+
+      <div className="login-right">
+        <div className="login-container">
           <div className="login-header">
-            <h1>{isLogin ? 'Welcome back' : 'Create account'}</h1>
-            <p>{isLogin ? 'Sign in to your account' : 'Get started with Smart Education'}</p>
+            <h1>{isLogin ? 'Welcome Back!' : 'Get Started'}</h1>
+            <p>{isLogin ? 'Sign in to continue your learning journey' : 'Create your account to start learning'}</p>
+          </div>
+
+          {/* Role Selection */}
+          <div className="role-selector">
+            <button
+              type="button"
+              className={`role-btn ${role === 'student' ? 'active' : ''}`}
+              onClick={() => setRole('student')}
+            >
+              <div className="role-icon student">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                  <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                </svg>
+              </div>
+              <div className="role-info">
+                <span className="role-title">Student</span>
+                <span className="role-desc">Access courses & quizzes</span>
+              </div>
+            </button>
+            <button
+              type="button"
+              className={`role-btn ${role === 'teacher' ? 'active' : ''}`}
+              onClick={() => setRole('teacher')}
+            >
+              <div className="role-icon teacher">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <div className="role-info">
+                <span className="role-title">Teacher</span>
+                <span className="role-desc">Manage classes & students</span>
+              </div>
+            </button>
           </div>
 
           <form className="login-form" onSubmit={handleSubmit}>
@@ -54,7 +139,7 @@ const Login = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    placeholder="John Doe"
+                    placeholder="Enter your full name"
                     required
                   />
                 </div>
@@ -62,7 +147,7 @@ const Login = () => {
             )}
 
             <div className="input-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email">Email Address</label>
               <div className="input-wrapper">
                 <span className="input-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -97,7 +182,7 @@ const Login = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   required
                 />
                 <button
@@ -107,8 +192,8 @@ const Login = () => {
                 >
                   {showPassword ? (
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                      <path d="M1 1l22 22" />
                     </svg>
                   ) : (
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -124,14 +209,18 @@ const Login = () => {
               <div className="form-options">
                 <label className="remember-me">
                   <input type="checkbox" />
+                  <span className="checkmark"></span>
                   <span>Remember me</span>
                 </label>
                 <a href="#" className="forgot-link">Forgot password?</a>
               </div>
             )}
 
-            <button type="submit" className="submit-btn">
-              {isLogin ? 'Sign in' : 'Create account'}
+            <button type="submit" className={`submit-btn ${role}`}>
+              {isLogin ? 'Sign In' : 'Create Account'}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
             </button>
           </form>
 
@@ -140,7 +229,7 @@ const Login = () => {
           </div>
 
           <div className="social-login">
-            <button type="button" className="social-btn">
+            <button type="button" className="social-btn google">
               <svg viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -149,30 +238,23 @@ const Login = () => {
               </svg>
               Google
             </button>
-            <button type="button" className="social-btn">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+            <button type="button" className="social-btn microsoft">
+              <svg viewBox="0 0 24 24">
+                <path fill="#F25022" d="M1 1h10v10H1z" />
+                <path fill="#00A4EF" d="M1 13h10v10H1z" />
+                <path fill="#7FBA00" d="M13 1h10v10H13z" />
+                <path fill="#FFB900" d="M13 13h10v10H13z" />
               </svg>
-              GitHub
+              Microsoft
             </button>
           </div>
 
           <div className="switch-mode">
             {isLogin ? "Don't have an account?" : 'Already have an account?'}
             <button type="button" onClick={toggleMode}>
-              {isLogin ? 'Sign up' : 'Sign in'}
+              {isLogin ? 'Sign up free' : 'Sign in'}
             </button>
           </div>
-        </div>
-
-        <div className="back-link">
-          <Link to="/">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Back to home
-          </Link>
         </div>
       </div>
     </div>

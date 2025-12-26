@@ -1,6 +1,6 @@
 .footer {
-  background: var(--gray-900);
-  color: var(--gray-400);
+  background: #1a1a2e;
+  color: #9ca3af;
   padding: 60px 20px 30px;
 }
 
@@ -14,7 +14,7 @@
 }
 
 .footer-brand h3 {
-  color: var(--white);
+  color: white;
   font-size: 1.25rem;
   margin-bottom: 16px;
   display: flex;
@@ -25,12 +25,12 @@
 .footer-brand p {
   font-size: 0.95rem;
   line-height: 1.6;
-  color: var(--gray-400);
+  color: #9ca3af;
   max-width: 300px;
 }
 
 .footer-column h4 {
-  color: var(--white);
+  color: white;
   font-size: 0.9rem;
   font-weight: 600;
   margin-bottom: 20px;
@@ -47,13 +47,13 @@
 }
 
 .footer-column a {
-  color: var(--gray-400);
+  color: #9ca3af;
   font-size: 0.95rem;
   transition: color 0.2s ease;
 }
 
 .footer-column a:hover {
-  color: var(--white);
+  color: white;
 }
 
 .social-links {
@@ -74,13 +74,13 @@
 }
 
 .social-links a:hover {
-  background: var(--primary);
+  background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
 .social-links svg {
   width: 18px;
   height: 18px;
-  color: var(--white);
+  color: white;
 }
 
 .footer-bottom {
@@ -88,7 +88,7 @@
   padding-top: 24px;
   text-align: center;
   font-size: 0.9rem;
-  color: var(--gray-500);
+  color: #6b7280;
 }
 
 @media (max-width: 768px) {
