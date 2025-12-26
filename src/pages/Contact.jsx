@@ -6,208 +6,184 @@ const Contact = () => {
     name: '',
     email: '',
     subject: '',
-    message: '',
+    message: ''
   });
-
-  const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Here you would typically send the form data to your backend
     console.log('Form submitted:', formData);
-    setSubmitted(true);
-
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-      });
-    }, 3000);
   };
 
   return (
     <div className="contact-container">
       {/* Header */}
       <section className="contact-header">
-        <h1>Get In Touch</h1>
-        <p>
-          Have questions? We'd love to hear from you. Send us a message and we'll
-          respond as soon as possible.
-        </p>
+        <h1>Contact Us</h1>
+        <p>We'd love to hear from you</p>
       </section>
 
-      {/* Contact Content */}
+      {/* Content */}
       <section className="contact-content">
         <div className="contact-wrapper">
-          {/* Contact Info */}
+          {/* Info */}
           <div className="contact-info">
-            <h2>Contact Information</h2>
+            <h2>Get in Touch</h2>
             <p className="contact-tagline">
-              Fill out the form and our team will get back to you within 24 hours
+              Have questions? We're here to help and answer any question you might have.
             </p>
 
             <div className="info-items">
               <div className="info-item">
-                <div className="info-icon">📧</div>
+                <div className="info-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </div>
                 <div className="info-text">
                   <h3>Email</h3>
-                  <p>support@smarteducation.in</p>
-                  <p>info@smarteducation.in</p>
+                  <p>hello@smarteducation.com</p>
                 </div>
               </div>
-
               <div className="info-item">
-                <div className="info-icon">📱</div>
+                <div className="info-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+                  </svg>
+                </div>
                 <div className="info-text">
                   <h3>Phone</h3>
-                  <p>+91 1800-XXX-XXXX (Toll Free)</p>
-                  <p>+91 98765-43210</p>
+                  <p>+91 1800-123-4567</p>
                 </div>
               </div>
-
               <div className="info-item">
-                <div className="info-icon">📍</div>
-                <div className="info-text">
-                  <h3>Address</h3>
-                  <p>Smart Education Campus</p>
-                  <p>Tech Hub, Bangalore, India</p>
+                <div className="info-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
                 </div>
-              </div>
-
-              <div className="info-item">
-                <div className="info-icon">🕐</div>
                 <div className="info-text">
-                  <h3>Working Hours</h3>
-                  <p>Monday - Friday: 9:00 AM - 6:00 PM</p>
-                  <p>Saturday: 10:00 AM - 4:00 PM</p>
+                  <h3>Location</h3>
+                  <p>Bengaluru, India</p>
                 </div>
               </div>
             </div>
 
             <div className="social-connect">
-              <h3>Connect With Us</h3>
+              <h3>Follow Us</h3>
               <div className="social-links">
-                <a href="#" className="social-link">📘 Facebook</a>
-                <a href="#" className="social-link">🐦 Twitter</a>
-                <a href="#" className="social-link">💼 LinkedIn</a>
-                <a href="#" className="social-link">📸 Instagram</a>
+                <a href="#" className="social-link" aria-label="Twitter">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                </a>
+                <a href="#" className="social-link" aria-label="LinkedIn">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                  </svg>
+                </a>
+                <a href="#" className="social-link" aria-label="GitHub">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                  </svg>
+                </a>
               </div>
             </div>
           </div>
 
-          {/* Contact Form */}
+          {/* Form */}
           <div className="contact-form-wrapper">
             <form className="contact-form" onSubmit={handleSubmit}>
-              <h2>Send Us a Message</h2>
+              <h2>Send a Message</h2>
 
-              <div className="form-group">
-                <label htmlFor="name">Full Name *</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Enter your name"
-                  required
-                />
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="name">Name</label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Your name"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="email">Email</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="form-group">
-                <label htmlFor="email">Email Address *</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="your.email@example.com"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="subject">Subject *</label>
+                <label htmlFor="subject">Subject</label>
                 <input
                   type="text"
                   id="subject"
                   name="subject"
                   value={formData.subject}
                   onChange={handleChange}
-                  placeholder="What is this about?"
+                  placeholder="How can we help?"
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="message">Message *</label>
+                <label htmlFor="message">Message</label>
                 <textarea
                   id="message"
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
-                  placeholder="Tell us more about your inquiry..."
-                  rows="6"
+                  placeholder="Your message..."
+                  rows="5"
                   required
-                ></textarea>
+                />
               </div>
 
               <button type="submit" className="submit-btn">
-                {submitted ? '✓ Message Sent!' : 'Send Message'}
+                Send Message
               </button>
-
-              {submitted && (
-                <div className="success-message">
-                  Thank you! We'll get back to you soon.
-                </div>
-              )}
             </form>
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
+      {/* FAQ */}
       <section className="faq-section">
         <h2>Frequently Asked Questions</h2>
         <div className="faq-grid">
           <div className="faq-card">
-            <h3>How do I enroll?</h3>
-            <p>
-              Simply sign up on our platform, choose your courses, and start
-              learning immediately. No complicated procedures!
-            </p>
+            <h3>How do I get started?</h3>
+            <p>Simply create an account and our AI will guide you through a quick assessment to personalize your learning path.</p>
           </div>
           <div className="faq-card">
             <h3>Is there a free trial?</h3>
-            <p>
-              Yes! We offer a 7-day free trial with full access to all features
-              and courses.
-            </p>
+            <p>Yes! We offer a 14-day free trial with full access to all features.</p>
           </div>
           <div className="faq-card">
-            <h3>Can I access on mobile?</h3>
-            <p>
-              Absolutely! Our platform is fully responsive and works seamlessly on
-              all devices.
-            </p>
+            <h3>Can I cancel anytime?</h3>
+            <p>Absolutely. You can cancel your subscription at any time with no questions asked.</p>
           </div>
           <div className="faq-card">
-            <h3>Do you offer certificates?</h3>
-            <p>
-              Yes, you'll receive a verified certificate upon successful
-              completion of any course.
-            </p>
+            <h3>Do you offer team plans?</h3>
+            <p>Yes, we have special pricing for educational institutions and organizations.</p>
           </div>
         </div>
       </section>

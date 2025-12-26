@@ -4,11 +4,11 @@ import './Login.css';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     name: '',
-    confirmPassword: '',
   });
 
   const handleChange = (e) => {
@@ -20,170 +20,159 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle login/signup logic here
     console.log('Form submitted:', formData);
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
-    setFormData({
-      email: '',
-      password: '',
-      name: '',
-      confirmPassword: '',
-    });
+    setFormData({ email: '', password: '', name: '' });
   };
 
   return (
     <div className="login-container">
       <div className="login-wrapper">
-        <div className="login-left">
-          <div className="login-branding">
-            <h1>📚 Smart Education</h1>
-            <p>Transform your learning journey with AI-powered education</p>
-            <div className="features-list">
-              <div className="feature-item">
-                <span className="check-icon">✓</span>
-                <span>Personalized learning paths</span>
-              </div>
-              <div className="feature-item">
-                <span className="check-icon">✓</span>
-                <span>AI-driven analytics</span>
-              </div>
-              <div className="feature-item">
-                <span className="check-icon">✓</span>
-                <span>Expert-curated content</span>
-              </div>
-              <div className="feature-item">
-                <span className="check-icon">✓</span>
-                <span>24/7 support available</span>
-              </div>
-            </div>
+        <div className="login-card">
+          <div className="login-header">
+            <h1>{isLogin ? 'Welcome back' : 'Create account'}</h1>
+            <p>{isLogin ? 'Sign in to your account' : 'Get started with Smart Education'}</p>
           </div>
-        </div>
 
-        <div className="login-right">
-          <div className="login-form-container">
-            <h2>{isLogin ? 'Welcome Back!' : 'Create Account'}</h2>
-            <p className="login-subtitle">
-              {isLogin
-                ? 'Login to continue your learning journey'
-                : 'Start your journey to smarter education'}
-            </p>
-
-            <form className="login-form" onSubmit={handleSubmit}>
-              {!isLogin && (
-                <div className="form-group">
-                  <label htmlFor="name">Full Name</label>
+          <form className="login-form" onSubmit={handleSubmit}>
+            {!isLogin && (
+              <div className="input-group">
+                <label htmlFor="name">Full Name</label>
+                <div className="input-wrapper">
+                  <span className="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </span>
                   <input
                     type="text"
                     id="name"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    placeholder="Enter your full name"
+                    placeholder="John Doe"
                     required
                   />
                 </div>
-              )}
+              </div>
+            )}
 
-              <div className="form-group">
-                <label htmlFor="email">Email Address</label>
+            <div className="input-group">
+              <label htmlFor="email">Email</label>
+              <div className="input-wrapper">
+                <span className="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </span>
                 <input
                   type="email"
                   id="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="your.email@example.com"
+                  placeholder="you@example.com"
                   required
                 />
               </div>
+            </div>
 
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
+            <div className="input-group">
+              <label htmlFor="password">Password</label>
+              <div className="input-wrapper">
+                <span className="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="Enter your password"
+                  placeholder="••••••••"
                   required
                 />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
               </div>
-
-              {!isLogin && (
-                <div className="form-group">
-                  <label htmlFor="confirmPassword">Confirm Password</label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm your password"
-                    required
-                  />
-                </div>
-              )}
-
-              {isLogin && (
-                <div className="form-options">
-                  <label className="checkbox-label">
-                    <input type="checkbox" />
-                    <span>Remember me</span>
-                  </label>
-                  <a href="#" className="forgot-link">
-                    Forgot Password?
-                  </a>
-                </div>
-              )}
-
-              <button type="submit" className="login-btn">
-                {isLogin ? 'Login' : 'Sign Up'}
-              </button>
-            </form>
-
-            <div className="divider">
-              <span>OR</span>
             </div>
 
-            <div className="social-login">
-              <button className="social-btn google-btn">
-                <span>🔍</span> Continue with Google
-              </button>
-              <button className="social-btn facebook-btn">
-                <span>📘</span> Continue with Facebook
-              </button>
-            </div>
+            {isLogin && (
+              <div className="form-options">
+                <label className="remember-me">
+                  <input type="checkbox" />
+                  <span>Remember me</span>
+                </label>
+                <a href="#" className="forgot-link">Forgot password?</a>
+              </div>
+            )}
 
-            <div className="toggle-mode">
-              {isLogin ? (
-                <p>
-                  Don't have an account?{' '}
-                  <button onClick={toggleMode} className="toggle-btn">
-                    Sign Up
-                  </button>
-                </p>
-              ) : (
-                <p>
-                  Already have an account?{' '}
-                  <button onClick={toggleMode} className="toggle-btn">
-                    Login
-                  </button>
-                </p>
-              )}
-            </div>
+            <button type="submit" className="submit-btn">
+              {isLogin ? 'Sign in' : 'Create account'}
+            </button>
+          </form>
 
-            <div className="login-footer">
-              <p>
-                By continuing, you agree to our{' '}
-                <Link to="/terms">Terms of Service</Link> and{' '}
-                <Link to="/privacy">Privacy Policy</Link>
-              </p>
-            </div>
+          <div className="divider">
+            <span>or continue with</span>
           </div>
+
+          <div className="social-login">
+            <button type="button" className="social-btn">
+              <svg viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              Google
+            </button>
+            <button type="button" className="social-btn">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+              </svg>
+              GitHub
+            </button>
+          </div>
+
+          <div className="switch-mode">
+            {isLogin ? "Don't have an account?" : 'Already have an account?'}
+            <button type="button" onClick={toggleMode}>
+              {isLogin ? 'Sign up' : 'Sign in'}
+            </button>
+          </div>
+        </div>
+
+        <div className="back-link">
+          <Link to="/">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Back to home
+          </Link>
         </div>
       </div>
     </div>
