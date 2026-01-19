@@ -1,0 +1,140 @@
+const User = require('../models/User');
+
+// @desc    Get all users
+// @route   GET /api/users
+// @access  Private/Admin
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Get users by role
+// @route   GET /api/users/role/:role
+// @access  Private/Admin or Teacher (for students only)
+const getUsersByRole = async (req, res) => {
+  try {
+    const { role } = req.params;
+    
+    if (!['admin', 'teacher', 'student'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    // Teachers can only view students
+    if (req.user.role === 'teacher' && role !== 'student') {
+      return res.status(403).json({ message: 'Teachers can only view students' });
+    }
+    
+    const users = await User.find({ role }).select('-password').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    console.error('Get users by role error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Create user (Admin or Teacher)
+// @route   POST /api/users
+// @access  Private/Admin (all roles) or Teacher (students only)
+const createUser = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+
+    // Validate input
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: 'Please provide all required fields' });
+    }
+
+    // Validate role
+    if (!['admin', 'teacher', 'student'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    // Teachers can only create students
+    if (req.user.role === 'teacher' && role !== 'student') {
+      return res.status(403).json({ message: 'Teachers can only create student accounts' });
+    }
+
+    // Check if user exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    // Create user
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role
+    });
+
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt
+    });
+  } catch (error) {
+    console.error('Create user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Delete user
+// @route   DELETE /api/users/:id
+// @access  Private/Admin or Teacher (students only)
+const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Prevent deleting themselves
+    if (user._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: 'Cannot delete your own account' });
+    }
+
+    // Teachers can only delete students
+    if (req.user.role === 'teacher' && user.role !== 'student') {
+      return res.status(403).json({ message: 'Teachers can only delete student accounts' });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Get dashboard stats
+// @route   GET /api/users/stats
+// @access  Private/Admin or Teacher
+const getStats = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalStudents = await User.countDocuments({ role: 'student' });
+    const totalTeachers = await User.countDocuments({ role: 'teacher' });
+    const totalAdmins = await User.countDocuments({ role: 'admin' });
+
+    res.json({
+      totalUsers,
+      totalStudents,
+      totalTeachers,
+      totalAdmins
+    });
+  } catch (error) {
+    console.error('Get stats error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { getUsers, getUsersByRole, createUser, deleteUser, getStats };

@@ -1,0 +1,171 @@
+/**
+ * Doubt Resolution Service
+ * Handles AI-powered doubt resolution using RAG
+ * Modular component for answer generation
+ */
+
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Doubt = require('../models/Doubt');
+const embeddingService = require('./embeddingService');
+const semanticSearchService = require('./semanticSearchService');
+
+class DoubtResolutionService {
+  constructor() {
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    // Use multiple models with fallback - lite models may have separate quota
+    this.models = ['gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+  }
+
+  /**
+   * Resolve a student's doubt using RAG
+   * @param {string} doubtId - Doubt document ID
+   * @returns {Promise<Object>} - Updated doubt with answer
+   */
+  async resolveDoubt(doubtId) {
+    const doubt = await Doubt.findById(doubtId);
+    if (!doubt) {
+      throw new Error('Doubt not found');
+    }
+
+    try {
+      // Update status to processing
+      doubt.status = 'processing';
+      await doubt.save();
+
+      // Generate embedding for the question
+      const questionEmbedding = await embeddingService.generateEmbedding(doubt.question);
+      doubt.questionEmbedding = questionEmbedding;
+
+      // Search for relevant materials
+      const relevantChunks = await semanticSearchService.search(doubt.question, {
+        subject: doubt.subject,
+        topic: doubt.topic,
+        topK: 5,
+        minSimilarity: 0.25
+      });
+
+      // Store relevant materials reference
+      doubt.relevantMaterials = relevantChunks.map(chunk => ({
+        materialId: chunk.materialId,
+        chunkIndex: chunk.chunkIndex,
+        similarity: chunk.similarity,
+        content: chunk.content.substring(0, 500) // Store preview
+      }));
+
+      // Generate answer using LLM with context
+      const context = semanticSearchService.formatContext(relevantChunks);
+      const answer = await this.generateAnswer(doubt.question, context);
+
+      doubt.answer = answer;
+      doubt.status = 'answered';
+      await doubt.save();
+
+      return doubt;
+    } catch (error) {
+      console.error('Error resolving doubt:', error);
+      doubt.status = 'failed';
+      doubt.error = error.message;
+      await doubt.save();
+      throw error;
+    }
+  }
+
+  /**
+   * Generate answer using LLM with context (with model fallback)
+   * @param {string} question - Student's question
+   * @param {string} context - Retrieved course material context
+   * @returns {Promise<string>} - Generated answer
+   */
+  async generateAnswer(question, context) {
+    const systemPrompt = `You are an expert educational assistant for students. Your role is to answer academic questions clearly and helpfully.
+
+INSTRUCTIONS:
+1. Use the provided course material context to answer the question accurately
+2. If the context is relevant, base your answer primarily on it
+3. If the context is not sufficient, use your general knowledge but indicate this
+4. Explain concepts in a clear, student-friendly manner
+5. Use examples when helpful
+6. Structure your answer with proper formatting (use bullet points, numbered lists when appropriate)
+7. Be concise but thorough
+8. If you're unsure about something, say so honestly
+
+CONTEXT FROM COURSE MATERIALS:
+${context}
+
+STUDENT'S QUESTION:
+${question}
+
+Please provide a helpful, accurate, and educational answer:`;
+
+    // Try multiple models with fallback
+    for (const modelName of this.models) {
+      try {
+        console.log(`🤖 Trying model: ${modelName} for doubt resolution...`);
+        const model = this.genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent(systemPrompt);
+        console.log(`✅ Doubt resolution success with ${modelName}`);
+        return result.response.text();
+      } catch (error) {
+        console.warn(`⚠️ Model ${modelName} failed:`, error.message);
+        // Continue to next model
+        continue;
+      }
+    }
+    
+    // All models failed
+    throw new Error('All AI models exhausted - API quota may be exceeded. Please try again later.');
+  }
+
+  /**
+   * Create and resolve a doubt in one operation
+   * @param {Object} doubtData - Doubt data
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} - Resolved doubt
+   */
+  async createAndResolve(doubtData, userId) {
+    const doubt = new Doubt({
+      question: doubtData.question,
+      subject: doubtData.subject,
+      topic: doubtData.topic,
+      askedBy: userId,
+      status: 'pending'
+    });
+
+    await doubt.save();
+    return this.resolveDoubt(doubt._id);
+  }
+
+  /**
+   * Get doubt history for a user
+   * @param {string} userId - User ID
+   * @param {Object} options - Query options
+   * @returns {Promise<Object[]>} - List of doubts
+   */
+  async getUserDoubts(userId, options = {}) {
+    const { page = 1, limit = 10, subject = null } = options;
+    
+    const query = { askedBy: userId };
+    if (subject) query.subject = subject;
+
+    const doubts = await Doubt.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('relevantMaterials.materialId', 'title subject topic')
+      .lean();
+
+    const total = await Doubt.countDocuments(query);
+
+    return {
+      doubts,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  }
+}
+
+module.exports = new DoubtResolutionService();
