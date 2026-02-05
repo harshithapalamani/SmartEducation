@@ -32,9 +32,15 @@ class DoubtResolutionService {
       doubt.status = 'processing';
       await doubt.save();
 
-      // Generate embedding for the question
-      const questionEmbedding = await embeddingService.generateEmbedding(doubt.question);
-      doubt.questionEmbedding = questionEmbedding;
+      // Try to generate embedding for the question (optional)
+      try {
+        const questionEmbedding = await embeddingService.generateEmbedding(doubt.question);
+        doubt.questionEmbedding = questionEmbedding;
+        await doubt.save();
+      } catch (e) {
+        console.warn('Question embedding unavailable; proceeding without it:', e.message);
+        // Proceed without storing an embedding; semantic search has its own fallback
+      }
 
       // Search for relevant materials
       const relevantChunks = await semanticSearchService.search(doubt.question, {
@@ -112,8 +118,21 @@ Please provide a helpful, accurate, and educational answer:`;
       }
     }
     
-    // All models failed
-    throw new Error('All AI models exhausted - API quota may be exceeded. Please try again later.');
+    // All models failed — provide a graceful fallback answer
+    const fallback = [
+      'AI service is temporarily unavailable. Here\'s a helpful summary based on your materials:',
+      '',
+      '• Key context extracted from course materials:',
+      context ? context.split('\n').slice(0, 10).join('\n') : 'No relevant context available.',
+      '',
+      '• Guidance:',
+      '- Review the highlighted sections above for direct explanations.',
+      '- If the context seems unrelated, try refining the subject/topic.',
+      '- Ask a more specific follow-up (e.g., define the term, show a formula, or step-by-step derivation).',
+      '',
+      'Once the AI service is restored, you\'ll receive a full explanation.'
+    ].join('\n');
+    return fallback;
   }
 
   /**

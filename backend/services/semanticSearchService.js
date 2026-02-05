@@ -23,8 +23,13 @@ class SemanticSearchService {
     } = options;
 
     try {
-      // Generate embedding for the query
-      const queryEmbedding = await embeddingService.generateEmbedding(query);
+      // Try to generate embedding for the query, fall back to lexical similarity
+      let queryEmbedding = null;
+      try {
+        queryEmbedding = await embeddingService.generateEmbedding(query);
+      } catch (e) {
+        console.warn('Embedding unavailable; using lexical similarity fallback:', e.message);
+      }
 
       // Build filter query
       const filter = { isProcessed: true };
@@ -45,10 +50,12 @@ class SemanticSearchService {
         for (const chunk of material.chunks) {
           if (!chunk.embedding || chunk.embedding.length === 0) continue;
 
-          const similarity = embeddingService.cosineSimilarity(
-            queryEmbedding,
-            chunk.embedding
-          );
+          let similarity = 0;
+          if (queryEmbedding && chunk.embedding) {
+            similarity = embeddingService.cosineSimilarity(queryEmbedding, chunk.embedding);
+          } else {
+            similarity = this.lexicalSimilarity(query, chunk.content);
+          }
 
           if (similarity >= minSimilarity) {
             results.push({
@@ -120,6 +127,27 @@ class SemanticSearchService {
     });
 
     return context;
+  }
+
+  /**
+   * Compute simple lexical similarity (Jaccard index over word sets)
+   * @param {string} a
+   * @param {string} b
+   * @returns {number}
+   */
+  lexicalSimilarity(a, b) {
+    if (!a || !b) return 0;
+    const tokenize = (t) => (t.toLowerCase().match(/[a-z0-9]+/g) || []).filter(w => w.length > 1);
+    const setA = new Set(tokenize(a));
+    const setB = new Set(tokenize(b));
+    if (setA.size === 0 || setB.size === 0) return 0;
+    let intersection = 0;
+    for (const w of setA) {
+      if (setB.has(w)) intersection++;
+    }
+    const union = setA.size + setB.size - intersection;
+    if (union === 0) return 0;
+    return intersection / union;
   }
 }
 

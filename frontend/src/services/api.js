@@ -5,6 +5,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -32,6 +33,10 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+    }
+    // Fail fast on network errors so UI can stop spinners
+    if (!error.response) {
+      return Promise.reject(new Error('Network error. Please try again.'));
     }
     return Promise.reject(error);
   }
