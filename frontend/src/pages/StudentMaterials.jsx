@@ -19,11 +19,11 @@ import {
     CheckCircle,
     Trash2
 } from 'lucide-react';
-import { useOnlineStatus } from '../hooks/useOffline';
 import {
     saveMaterialOffline,
     getAllMaterialsOffline,
     removeMaterialOffline,
+    getMaterialOffline,
     isDownloaded as checkIsDownloaded
 } from '../services/offlineStorage';
 
@@ -42,7 +42,6 @@ const StudentMaterials = () => {
     const [viewLoading, setViewLoading] = useState(false);
     const [offlineMode, setOfflineMode] = useState(false);
     const [downloadedIds, setDownloadedIds] = useState(new Set());
-    const isOnline = useOnlineStatus();
 
     const fetchMaterials = async (subject = '', topic = '') => {
         if (!navigator.onLine) {
@@ -163,11 +162,33 @@ const StudentMaterials = () => {
     const handleView = async (material) => {
         setViewLoading(true);
         try {
-            const response = await materialsAPI.getById(material._id);
-            setSelectedMaterial(response.data);
-            setShowViewModal(true);
+            if (navigator.onLine) {
+                const response = await materialsAPI.getById(material._id);
+                setSelectedMaterial(response.data);
+                setShowViewModal(true);
+            } else {
+                // Offline — try loading from IndexedDB
+                const offlineMaterial = await getMaterialOffline(material._id);
+                if (offlineMaterial) {
+                    setSelectedMaterial({ material: offlineMaterial });
+                    setShowViewModal(true);
+                } else {
+                    setError('This material is not available offline. Download it while online.');
+                }
+            }
         } catch (error) {
-            setError('Failed to load material details');
+            // Network error — try offline fallback
+            try {
+                const offlineMaterial = await getMaterialOffline(material._id);
+                if (offlineMaterial) {
+                    setSelectedMaterial({ material: offlineMaterial });
+                    setShowViewModal(true);
+                } else {
+                    setError('Failed to load material. Download it for offline access.');
+                }
+            } catch {
+                setError('Failed to load material details');
+            }
         } finally {
             setViewLoading(false);
         }
@@ -368,32 +389,31 @@ const StudentMaterials = () => {
                                 </div>
 
                                 {/* Download for offline button */}
-                                {isOnline && (
-                                    <div className="mb-3 flex items-center justify-end">
-                                        {downloadedIds.has(material._id) ? (
-                                            <div className="flex items-center gap-1">
-                                                <span className="inline-flex items-center gap-1 rounded-lg bg-[#dcfce7] px-2 py-1 text-xs font-medium text-[#166534]">
-                                                    <CheckCircle className="h-3.5 w-3.5" /> Offline
-                                                </span>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleRemoveDownload(material._id); }}
-                                                    className="p-1 text-gray-400 hover:text-red-500 rounded transition"
-                                                    title="Remove offline copy"
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                </button>
-                                            </div>
-                                        ) : (
+                                <div className="mb-3 flex items-center justify-end">
+                                    {downloadedIds.has(material._id) ? (
+                                        <div className="flex items-center gap-1">
+                                            <span className="inline-flex items-center gap-1 rounded-lg bg-[#dcfce7] px-2 py-1 text-xs font-medium text-[#166534]">
+                                                <CheckCircle className="h-3.5 w-3.5" /> Offline Ready
+                                            </span>
                                             <button
-                                                onClick={(e) => { e.stopPropagation(); handleDownloadMaterial(material); }}
-                                                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-gray-500 hover:bg-[#ede9fe] hover:text-[#4338ca] transition"
-                                                title="Save for offline"
+                                                onClick={(e) => { e.stopPropagation(); handleRemoveDownload(material._id); }}
+                                                className="p-1 text-gray-400 hover:text-red-500 rounded transition"
+                                                title="Remove offline copy"
                                             >
-                                                <Download className="h-3.5 w-3.5" /> Save Offline
+                                                <Trash2 className="h-3.5 w-3.5" />
                                             </button>
-                                        )}
-                                    </div>
-                                )}
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDownloadMaterial(material); }}
+                                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-[#4338ca] bg-[#ede9fe] hover:bg-[#ddd6fe] transition"
+                                            title="Save for offline"
+                                            disabled={!navigator.onLine}
+                                        >
+                                            <Download className="h-3.5 w-3.5" /> Save Offline
+                                        </button>
+                                    )}
+                                </div>
 
                                 <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-black">
                                     {material.title}

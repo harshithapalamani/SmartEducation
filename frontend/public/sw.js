@@ -1,8 +1,8 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_NAME = 'smart-edu-v1';
-const STATIC_CACHE = 'smart-edu-static-v1';
-const API_CACHE = 'smart-edu-api-v1';
+const CACHE_NAME = 'smart-edu-v2';
+const STATIC_CACHE = 'smart-edu-static-v2';
+const API_CACHE = 'smart-edu-api-v2';
 
 // Static assets to pre-cache on install
 const PRECACHE_URLS = [
@@ -33,11 +33,12 @@ self.addEventListener('install', (event) => {
 
 // Activate — clean up old caches
 self.addEventListener('activate', (event) => {
+  const currentCaches = [STATIC_CACHE, API_CACHE, CACHE_NAME];
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== STATIC_CACHE && key !== API_CACHE && key !== CACHE_NAME)
+          .filter((key) => !currentCaches.includes(key))
           .map((key) => caches.delete(key))
       )
     )
@@ -52,6 +53,8 @@ self.addEventListener('fetch', (event) => {
 
   // Skip non-GET requests
   if (request.method !== 'GET') return;
+  // Skip chrome-extension and other non-http(s) requests
+  if (!url.protocol.startsWith('http')) return;
 
   // API requests — network-first, fall back to cache
   if (url.pathname.startsWith('/api/')) {
@@ -85,33 +88,39 @@ self.addEventListener('fetch', (event) => {
     }
   }
 
-  // Static assets — cache-first
+  // For navigation requests (page loads/refreshes) — try network, fallback to cached index.html
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Cache the navigation response
+          const cloned = response.clone();
+          caches.open(STATIC_CACHE).then((cache) => cache.put(request, cloned));
+          return response;
+        })
+        .catch(() => {
+          return caches.match('/index.html').then((cached) => {
+            return cached || new Response('Offline - App not cached', { status: 503 });
+          });
+        })
+    );
+    return;
+  }
+
+  // Static assets (JS, CSS, images, fonts) — cache-first, then network
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
       return fetch(request)
         .then((response) => {
-          // Cache static assets (JS, CSS, images)
-          if (
-            response.ok &&
-            (url.pathname.endsWith('.js') ||
-              url.pathname.endsWith('.css') ||
-              url.pathname.endsWith('.png') ||
-              url.pathname.endsWith('.svg') ||
-              url.pathname.endsWith('.ico') ||
-              url.pathname.endsWith('.woff2') ||
-              url.pathname.endsWith('.woff'))
-          ) {
+          // Cache all same-origin static assets (includes hashed build files)
+          if (response.ok && url.origin === self.location.origin) {
             const cloned = response.clone();
             caches.open(STATIC_CACHE).then((cache) => cache.put(request, cloned));
           }
           return response;
         })
         .catch(() => {
-          // For navigation requests, return the cached index.html (SPA fallback)
-          if (request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
           return new Response('Offline', { status: 503 });
         });
     })

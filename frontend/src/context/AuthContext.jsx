@@ -24,14 +24,36 @@ export const AuthProvider = ({ children }) => {
         const storedUser = localStorage.getItem('user');
 
         if (token && storedUser) {
+            // If offline, use stored user data directly
+            if (!navigator.onLine) {
+                try {
+                    setUser(JSON.parse(storedUser));
+                } catch {
+                    setUser(null);
+                }
+                setLoading(false);
+                return;
+            }
             try {
                 const response = await authAPI.getMe();
                 setUser(response.data);
+                // Update stored user with fresh data
+                localStorage.setItem('user', JSON.stringify(response.data));
             } catch (error) {
                 console.error('Auth check failed:', error);
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                setUser(null);
+                // If it's a network error (offline/server down), use stored user
+                if (!error.response) {
+                    try {
+                        setUser(JSON.parse(storedUser));
+                    } catch {
+                        setUser(null);
+                    }
+                } else {
+                    // Actual auth failure (401, etc.)
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setUser(null);
+                }
             }
         }
         setLoading(false);

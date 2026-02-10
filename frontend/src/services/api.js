@@ -30,13 +30,19 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Only clear auth and redirect if we're online (real auth failure)
+      // When offline, keep the stored credentials
+      if (navigator.onLine) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
-    // Fail fast on network errors so UI can stop spinners
+    // Network errors — don't redirect, let pages handle offline fallback
     if (!error.response) {
-      return Promise.reject(new Error('Network error. Please try again.'));
+      const networkError = new Error('Network error. Please try again.');
+      networkError.isNetworkError = true;
+      return Promise.reject(networkError);
     }
     return Promise.reject(error);
   }
