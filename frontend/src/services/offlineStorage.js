@@ -214,8 +214,90 @@ export async function saveProgressOffline(progressItems) {
   })));
 }
 
+export async function saveProgressItemOffline(topicId, courseId, data) {
+  await putItem(STORES.PROGRESS, {
+    _id: `offline_${topicId}`,
+    topic: topicId,
+    courseId,
+    ...data,
+    _offlineAt: new Date().toISOString()
+  });
+}
+
 export async function getProgressOffline() {
   return getAllItems(STORES.PROGRESS);
+}
+
+export async function getProgressForCourseOffline(courseId) {
+  const all = await getAllItems(STORES.PROGRESS);
+  return all.filter(p => p.courseId === courseId);
+}
+
+// ── Pending sync queue ──────────────────────────────────────────────
+
+const PENDING_SYNC = 'pendingSync';
+
+async function ensurePendingSyncStore() {
+  const db = await openDB();
+  if (!db.objectStoreNames.contains(PENDING_SYNC)) {
+    // Need to upgrade DB version to add new store
+    db.close();
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION + 1);
+      request.onupgradeneeded = (event) => {
+        const upgradeDb = event.target.result;
+        if (!upgradeDb.objectStoreNames.contains(PENDING_SYNC)) {
+          upgradeDb.createObjectStore(PENDING_SYNC, { keyPath: 'id', autoIncrement: true });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  return db;
+}
+
+export async function queueProgressSync(topicId, data) {
+  const db = await ensurePendingSyncStore();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(PENDING_SYNC, 'readwrite');
+    tx.objectStore(PENDING_SYNC).put({
+      type: 'progress',
+      topicId,
+      data,
+      queuedAt: new Date().toISOString()
+    });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function getPendingSyncs() {
+  try {
+    const db = await ensurePendingSyncStore();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(PENDING_SYNC, 'readonly');
+      const req = tx.objectStore(PENDING_SYNC).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function clearPendingSyncs() {
+  try {
+    const db = await ensurePendingSyncStore();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(PENDING_SYNC, 'readwrite');
+      tx.objectStore(PENDING_SYNC).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch {
+    // ignore
+  }
 }
 
 // ── Revisions offline storage ───────────────────────────────────────

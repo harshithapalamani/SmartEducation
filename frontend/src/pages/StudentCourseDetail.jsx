@@ -2,10 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import { coursesAPI, progressAPI } from '../services/api';
-import { ArrowLeft, BookOpen, Clock, CheckCircle, Loader2, FileText, Award, ChevronRight, File, Star, RotateCcw } from 'lucide-react';
+import { ArrowLeft, BookOpen, Clock, CheckCircle, Loader2, FileText, Award, ChevronRight, File, Star, RotateCcw, WifiOff } from 'lucide-react';
 import {
     getCourseOffline,
-    getTopicContentOffline
+    getTopicContentOffline,
+    saveProgressItemOffline,
+    getProgressForCourseOffline,
+    queueProgressSync,
+    getPendingSyncs,
+    clearPendingSyncs
 } from '../services/offlineStorage';
 
 const STATUS_STYLES = {
@@ -36,6 +41,14 @@ const StudentCourseDetail = () => {
             if (offlineData.course) {
                 setCourse(offlineData.course);
                 setTopics(offlineData.topics || []);
+                // Also load offline progress
+                const offlineProgress = await getProgressForCourseOffline(courseId);
+                const pMap = {};
+                offlineProgress.forEach(p => {
+                    const topicId = p.topic || p._id?.replace('offline_', '');
+                    if (topicId) pMap[topicId] = p;
+                });
+                setProgressMap(pMap);
             } else {
                 setError('Course not available offline. Download it first when online.');
             }
@@ -43,6 +56,28 @@ const StudentCourseDetail = () => {
             setError('Failed to load offline course data.');
         }
     }, [courseId]);
+
+    // Sync pending offline progress when back online
+    const syncPendingProgress = useCallback(async () => {
+        if (!navigator.onLine) return;
+        try {
+            const pending = await getPendingSyncs();
+            if (pending.length === 0) return;
+            for (const item of pending) {
+                if (item.type === 'progress') {
+                    try {
+                        await progressAPI.updateProgress(item.topicId, item.data);
+                    } catch {
+                        // If sync fails, keep in queue
+                        return;
+                    }
+                }
+            }
+            await clearPendingSyncs();
+        } catch {
+            // ignore sync errors
+        }
+    }, []);
 
     const fetchData = useCallback(async () => {
         // Try online first
@@ -76,6 +111,15 @@ const StudentCourseDetail = () => {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
+    // Try syncing when coming back online
+    useEffect(() => {
+        const handleOnline = () => { syncPendingProgress().then(() => fetchData()); };
+        window.addEventListener('online', handleOnline);
+        // Also try syncing on mount if online
+        if (navigator.onLine) syncPendingProgress();
+        return () => window.removeEventListener('online', handleOnline);
+    }, [syncPendingProgress, fetchData]);
+
     const openTopicReader = async (topic) => {
         setReadingTopic(topic);
         setContentLoading(true);
@@ -89,7 +133,7 @@ const StudentCourseDetail = () => {
             } catch {
                 // Try offline fallback
                 const offlineContent = await getTopicContentOffline(topic._id);
-                if (offlineContent) {
+                if (offlineContent?.content) {
                     setTopicContent(offlineContent.content);
                 } else {
                     setTopicContent({ error: 'Failed to load content' });
@@ -99,7 +143,7 @@ const StudentCourseDetail = () => {
             // Offline mode - get from IndexedDB
             try {
                 const offlineContent = await getTopicContentOffline(topic._id);
-                if (offlineContent) {
+                if (offlineContent?.content) {
                     setTopicContent(offlineContent.content);
                 } else {
                     setTopicContent({ error: 'Topic not available offline. Download the course while online.' });
@@ -118,11 +162,21 @@ const StudentCourseDetail = () => {
 
     const handleStartTopic = async (topicId) => {
         setUpdating(topicId);
+        const data = { status: 'in-progress', timeSpentMinutes: 0 };
         try {
-            await progressAPI.updateProgress(topicId, { status: 'in-progress', timeSpentMinutes: 0 });
-            await fetchData();
+            if (navigator.onLine) {
+                await progressAPI.updateProgress(topicId, data);
+                await fetchData();
+            } else {
+                await saveProgressItemOffline(topicId, courseId, data);
+                await queueProgressSync(topicId, data);
+                setProgressMap(prev => ({ ...prev, [topicId]: { ...prev[topicId], topic: topicId, ...data } }));
+            }
         } catch {
-            setError('Failed to start topic.');
+            // Fallback to offline save
+            await saveProgressItemOffline(topicId, courseId, data);
+            await queueProgressSync(topicId, data);
+            setProgressMap(prev => ({ ...prev, [topicId]: { ...prev[topicId], topic: topicId, ...data } }));
         } finally {
             setUpdating(null);
         }
@@ -130,17 +184,25 @@ const StudentCourseDetail = () => {
 
     const handleCompleteTopic = async (topic) => {
         setUpdating(topic._id);
+        const data = { status: 'completed', masteryLevel: 0.8, timeSpentMinutes: topic.estimatedMinutes || 15 };
         try {
-            await progressAPI.updateProgress(topic._id, {
-                status: 'completed',
-                masteryLevel: 0.8,
-                timeSpentMinutes: topic.estimatedMinutes || 15
-            });
+            if (navigator.onLine) {
+                await progressAPI.updateProgress(topic._id, data);
+                await fetchData();
+            } else {
+                await saveProgressItemOffline(topic._id, courseId, data);
+                await queueProgressSync(topic._id, data);
+                setProgressMap(prev => ({ ...prev, [topic._id]: { ...prev[topic._id], topic: topic._id, ...data } }));
+            }
             setCompletionSuccess(topic);
-            await fetchData();
             setTimeout(() => setCompletionSuccess(null), 3000);
         } catch {
-            setError('Failed to complete topic.');
+            // Fallback to offline save
+            await saveProgressItemOffline(topic._id, courseId, data);
+            await queueProgressSync(topic._id, data);
+            setProgressMap(prev => ({ ...prev, [topic._id]: { ...prev[topic._id], topic: topic._id, ...data } }));
+            setCompletionSuccess(topic);
+            setTimeout(() => setCompletionSuccess(null), 3000);
         } finally {
             setUpdating(null);
         }
@@ -148,16 +210,24 @@ const StudentCourseDetail = () => {
 
     const handleMasterTopic = async (topic) => {
         setUpdating(topic._id);
+        const data = { status: 'mastered', masteryLevel: 1.0 };
         try {
-            await progressAPI.updateProgress(topic._id, {
-                status: 'mastered',
-                masteryLevel: 1.0
-            });
+            if (navigator.onLine) {
+                await progressAPI.updateProgress(topic._id, data);
+                await fetchData();
+            } else {
+                await saveProgressItemOffline(topic._id, courseId, data);
+                await queueProgressSync(topic._id, data);
+                setProgressMap(prev => ({ ...prev, [topic._id]: { ...prev[topic._id], topic: topic._id, ...data } }));
+            }
             setCompletionSuccess({ ...topic, mastered: true });
-            await fetchData();
             setTimeout(() => setCompletionSuccess(null), 3000);
         } catch {
-            setError('Failed to master topic.');
+            await saveProgressItemOffline(topic._id, courseId, data);
+            await queueProgressSync(topic._id, data);
+            setProgressMap(prev => ({ ...prev, [topic._id]: { ...prev[topic._id], topic: topic._id, ...data } }));
+            setCompletionSuccess({ ...topic, mastered: true });
+            setTimeout(() => setCompletionSuccess(null), 3000);
         } finally {
             setUpdating(null);
         }
@@ -165,16 +235,22 @@ const StudentCourseDetail = () => {
 
     const handleRestartTopic = async (topic) => {
         setUpdating(topic._id);
+        const data = { status: 'in-progress', masteryLevel: 0.5, timeSpentMinutes: 0 };
         try {
-            await progressAPI.updateProgress(topic._id, {
-                status: 'in-progress',
-                masteryLevel: 0.5,
-                timeSpentMinutes: 0
-            });
-            await fetchData();
+            if (navigator.onLine) {
+                await progressAPI.updateProgress(topic._id, data);
+                await fetchData();
+            } else {
+                await saveProgressItemOffline(topic._id, courseId, data);
+                await queueProgressSync(topic._id, data);
+                setProgressMap(prev => ({ ...prev, [topic._id]: { ...prev[topic._id], topic: topic._id, ...data } }));
+            }
             openTopicReader(topic);
         } catch {
-            setError('Failed to restart topic.');
+            await saveProgressItemOffline(topic._id, courseId, data);
+            await queueProgressSync(topic._id, data);
+            setProgressMap(prev => ({ ...prev, [topic._id]: { ...prev[topic._id], topic: topic._id, ...data } }));
+            openTopicReader(topic);
         } finally {
             setUpdating(null);
         }
@@ -185,7 +261,9 @@ const StudentCourseDetail = () => {
     const sortedTopics = [...topics].sort((a, b) => a.order - b.order);
 
     // Check if the previous topic is completed (for sequential unlock)
+    // In offline mode, unlock all topics so students can study freely
     const isTopicUnlocked = (index) => {
+        if (!navigator.onLine) return true; // All unlocked offline
         if (index === 0) return true;
         const prevTopic = sortedTopics[index - 1];
         const prevProg = getProgress(prevTopic._id);
@@ -295,7 +373,7 @@ const StudentCourseDetail = () => {
                             <div className="p-12 text-center">
                                 <p className="text-sm text-red-600">{topicContent.error}</p>
                             </div>
-                        ) : !topicContent?.material?.content ? (
+                        ) : !(topicContent?.material?.content) ? (
                             <div className="flex flex-col items-center justify-center py-24">
                                 <FileText className="h-16 w-16 text-[#cbd5e1]" />
                                 <h3 className="mt-4 text-lg font-semibold text-[#475569]">No Content Available</h3>
@@ -400,6 +478,17 @@ const StudentCourseDetail = () => {
                 </section>
 
                 {error && <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+                {/* Offline mode notice */}
+                {!navigator.onLine && (
+                    <div className="rounded-2xl bg-[#fef3c7] p-4 flex items-center gap-3">
+                        <WifiOff className="h-5 w-5 text-[#92400e] flex-shrink-0" />
+                        <div className="text-sm text-[#92400e]">
+                            <p className="font-semibold">Offline Mode</p>
+                            <p className="text-xs mt-0.5">You can read topics and mark progress. Changes will sync when you reconnect.</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Topics list - sequential learning path */}
                 <section className="rounded-[28px] bg-white p-6 shadow-xl ring-1 ring-[#e2e8f0]">
