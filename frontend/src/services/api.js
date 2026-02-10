@@ -159,6 +159,7 @@ export const gamificationAPI = {
   getMyBadges: () => api.get('/gamification/badges'),
   getPointsHistory: (params = {}) => api.get('/gamification/history', { params }),
   getStats: () => api.get('/gamification/stats'),
+  getActivityHeatmap: () => api.get('/gamification/activity-heatmap'),
   // Teacher endpoint
   getClassOverview: () => api.get('/gamification/overview')
 };

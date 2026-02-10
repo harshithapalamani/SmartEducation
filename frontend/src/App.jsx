@@ -22,6 +22,7 @@ import StudentKnowledgeMap from './pages/StudentKnowledgeMap';
 import StudentRevisions from './pages/StudentRevisions';
 import StudentProgress from './pages/StudentProgress';
 import StudentLeaderboard from './pages/StudentLeaderboard';
+import StudentProfile from './pages/StudentProfile';
 import AIDoubtSupport from './pages/AIDoubtSupport';
 import Chatbot from './pages/Chatbot';
 
@@ -166,6 +167,14 @@ function App() {
                         element={
                             <ProtectedRoute allowedRoles={['student']}>
                                 <StudentLeaderboard />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/student/profile"
+                        element={
+                            <ProtectedRoute allowedRoles={['student']}>
+                                <StudentProfile />
                             </ProtectedRoute>
                         }
                     />

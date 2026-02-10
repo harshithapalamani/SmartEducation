@@ -7,7 +7,8 @@ const {
   getMyBadges,
   getPointsHistory,
   getStats,
-  getClassOverview
+  getClassOverview,
+  getActivityHeatmap
 } = require('../controllers/gamificationController');
 
 // All routes require authentication
@@ -18,6 +19,7 @@ router.get('/profile', authorize('student'), getMyProfile);
 router.get('/badges', authorize('student'), getMyBadges);
 router.get('/history', authorize('student'), getPointsHistory);
 router.get('/stats', authorize('student'), getStats);
+router.get('/activity-heatmap', authorize('student'), getActivityHeatmap);
 
 // Leaderboard (all authenticated users can view)
 router.get('/leaderboard', getLeaderboard);

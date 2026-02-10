@@ -263,3 +263,59 @@ function getAllBadgeDefinitions() {
     { id: 'fast_learner', name: 'Fast Learner', description: 'Complete 5 lessons in one day', icon: '⚡', category: 'speed' }
   ];
 }
+
+// @desc    Get activity heatmap data (daily XP for the last year)
+// @route   GET /api/gamification/activity-heatmap
+// @access  Private (Student)
+exports.getActivityHeatmap = async (req, res) => {
+  try {
+    const profile = await Gamification.findOne({ student: req.user._id });
+    if (!profile) {
+      return res.json({ heatmap: [], totalActiveDays: 0, totalPoints: 0 });
+    }
+
+    // Build a map of date -> total points from pointsHistory
+    const dayMap = {};
+    const now = new Date();
+    const oneYearAgo = new Date(now);
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    (profile.pointsHistory || []).forEach(entry => {
+      const date = new Date(entry.earnedAt);
+      if (date >= oneYearAgo) {
+        const key = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        dayMap[key] = (dayMap[key] || 0) + entry.amount;
+      }
+    });
+
+    // Generate array for every day in the last year
+    const heatmap = [];
+    const cursor = new Date(oneYearAgo);
+    cursor.setHours(0, 0, 0, 0);
+    const end = new Date(now);
+    end.setHours(0, 0, 0, 0);
+
+    while (cursor <= end) {
+      const key = cursor.toISOString().split('T')[0];
+      heatmap.push({ date: key, points: dayMap[key] || 0 });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const totalActiveDays = Object.keys(dayMap).length;
+
+    res.json({
+      heatmap,
+      totalActiveDays,
+      totalPoints: profile.totalPoints,
+      currentStreak: profile.currentStreak,
+      longestStreak: profile.longestStreak,
+      level: profile.level,
+      lessonsCompleted: profile.lessonsCompleted,
+      revisionsCompleted: profile.revisionsCompleted,
+      badges: profile.badges
+    });
+  } catch (error) {
+    console.error('Get activity heatmap error:', error);
+    res.status(500).json({ message: 'Error fetching heatmap' });
+  }
+};

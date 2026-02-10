@@ -13,7 +13,8 @@ import {
     Sparkles,
     Map,
     CalendarClock,
-    TrendingUp
+    TrendingUp,
+    User
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -35,13 +36,16 @@ const Sidebar = () => {
             case 'teacher':
                 return [
                     { path: '/teacher', icon: LayoutDashboard, label: 'Dashboard' },
+                    { path: '/teacher/courses', icon: BookOpen, label: 'My Courses' },
                     { path: '/teacher/materials', icon: FileText, label: 'Course Materials' },
                     { path: '/teacher/students', icon: GraduationCap, label: 'My Students' }
                 ];
             case 'student':
                 return [
                     { path: '/student', icon: LayoutDashboard, label: 'Dashboard' },
-                    { path: '/student/materials', icon: BookOpen, label: 'Course Materials' },
+                    { path: '/student/profile', icon: User, label: 'My Profile' },
+                    { path: '/student/courses', icon: BookOpen, label: 'My Courses' },
+                    { path: '/student/materials', icon: FileText, label: 'Course Materials' },
                     { path: '/student/knowledge-map', icon: Map, label: 'Knowledge Map' },
                     { path: '/student/revisions', icon: CalendarClock, label: 'Revisions' },
                     { path: '/student/progress', icon: TrendingUp, label: 'Progress' },

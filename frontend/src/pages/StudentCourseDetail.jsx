@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import { coursesAPI, progressAPI } from '../services/api';
-import { ArrowLeft, BookOpen, Clock, CheckCircle, Loader2, FileText, Award, ChevronRight, File } from 'lucide-react';
+import { ArrowLeft, BookOpen, Clock, CheckCircle, Loader2, FileText, Award, ChevronRight, File, Star, RotateCcw } from 'lucide-react';
 
 const STATUS_STYLES = {
     'mastered': { bg: 'bg-[#dcfce7]', text: 'text-[#166534]', label: 'Mastered' },
@@ -102,6 +102,40 @@ const StudentCourseDetail = () => {
         }
     };
 
+    const handleMasterTopic = async (topic) => {
+        setUpdating(topic._id);
+        try {
+            await progressAPI.updateProgress(topic._id, {
+                status: 'mastered',
+                masteryLevel: 1.0
+            });
+            setCompletionSuccess({ ...topic, mastered: true });
+            await fetchData();
+            setTimeout(() => setCompletionSuccess(null), 3000);
+        } catch {
+            setError('Failed to master topic.');
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    const handleRestartTopic = async (topic) => {
+        setUpdating(topic._id);
+        try {
+            await progressAPI.updateProgress(topic._id, {
+                status: 'in-progress',
+                masteryLevel: 0.5,
+                timeSpentMinutes: 0
+            });
+            await fetchData();
+            openTopicReader(topic);
+        } catch {
+            setError('Failed to restart topic.');
+        } finally {
+            setUpdating(null);
+        }
+    };
+
     const getProgress = (topicId) => progressMap[topicId] || null;
 
     const sortedTopics = [...topics].sort((a, b) => a.order - b.order);
@@ -134,6 +168,7 @@ const StudentCourseDetail = () => {
     if (readingTopic) {
         const prog = getProgress(readingTopic._id);
         const isCompleted = prog?.status === 'completed' || prog?.status === 'mastered';
+        const isMastered = prog?.status === 'mastered';
 
         return (
             <DashboardLayout>
@@ -157,22 +192,51 @@ const StudentCourseDetail = () => {
                                     </div>
                                 </div>
                             </div>
-                            {isCompleted ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-[#dcfce7] px-4 py-2 text-sm font-semibold text-[#166534]">
-                                    <CheckCircle className="h-4 w-4" /> Completed
-                                </span>
-                            ) : (
-                                <button
-                                    onClick={() => handleCompleteTopic(readingTopic)}
-                                    disabled={updating === readingTopic._id}
-                                    className="inline-flex items-center gap-2 rounded-full bg-[#16a34a] px-5 py-2 text-sm font-semibold text-white shadow hover:bg-[#15803d] disabled:opacity-50 transition">
-                                    {updating === readingTopic._id ? (
-                                        <><Loader2 className="h-4 w-4 animate-spin" /> Completing...</>
-                                    ) : (
-                                        <><CheckCircle className="h-4 w-4" /> Mark as Complete (+{readingTopic.pointsReward} XP)</>
-                                    )}
-                                </button>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {isMastered ? (
+                                    <>
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-[#fef9c3] px-4 py-2 text-sm font-semibold text-[#92400e]">
+                                            <Star className="h-4 w-4" /> Mastered
+                                        </span>
+                                        <button
+                                            onClick={() => handleRestartTopic(readingTopic)}
+                                            disabled={updating === readingTopic._id}
+                                            className="inline-flex items-center gap-1 rounded-full border border-[#e2e8f0] px-4 py-2 text-sm font-medium text-[#475569] hover:bg-[#f1f5f9] disabled:opacity-50 transition">
+                                            <RotateCcw className="h-4 w-4" /> Revise Again
+                                        </button>
+                                    </>
+                                ) : isCompleted ? (
+                                    <>
+                                        <button
+                                            onClick={() => handleMasterTopic(readingTopic)}
+                                            disabled={updating === readingTopic._id}
+                                            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-5 py-2 text-sm font-semibold text-white shadow hover:from-[#d97706] hover:to-[#b45309] disabled:opacity-50 transition">
+                                            {updating === readingTopic._id ? (
+                                                <><Loader2 className="h-4 w-4 animate-spin" /> Mastering...</>
+                                            ) : (
+                                                <><Star className="h-4 w-4" /> Mark as Mastered</>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => handleRestartTopic(readingTopic)}
+                                            disabled={updating === readingTopic._id}
+                                            className="inline-flex items-center gap-1 rounded-full border border-[#e2e8f0] px-4 py-2 text-sm font-medium text-[#475569] hover:bg-[#f1f5f9] disabled:opacity-50 transition">
+                                            <RotateCcw className="h-4 w-4" /> Revise Again
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => handleCompleteTopic(readingTopic)}
+                                        disabled={updating === readingTopic._id}
+                                        className="inline-flex items-center gap-2 rounded-full bg-[#16a34a] px-5 py-2 text-sm font-semibold text-white shadow hover:bg-[#15803d] disabled:opacity-50 transition">
+                                        {updating === readingTopic._id ? (
+                                            <><Loader2 className="h-4 w-4 animate-spin" /> Completing...</>
+                                        ) : (
+                                            <><CheckCircle className="h-4 w-4" /> Mark as Complete (+{readingTopic.pointsReward} XP)</>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -253,10 +317,14 @@ const StudentCourseDetail = () => {
                 {completionSuccess && (
                     <div className="fixed top-4 right-4 z-50 animate-bounce rounded-2xl bg-[#16a34a] px-6 py-4 text-white shadow-2xl">
                         <div className="flex items-center gap-3">
-                            <span className="text-2xl">🎉</span>
+                            <span className="text-2xl">{completionSuccess.mastered ? '⭐' : '🎉'}</span>
                             <div>
-                                <p className="font-semibold">Topic Completed!</p>
-                                <p className="text-sm opacity-90">+{completionSuccess.pointsReward} XP earned for "{completionSuccess.title}"</p>
+                                <p className="font-semibold">{completionSuccess.mastered ? 'Topic Mastered!' : 'Topic Completed!'}</p>
+                                <p className="text-sm opacity-90">
+                                    {completionSuccess.mastered
+                                        ? `"${completionSuccess.title}" is now mastered!`
+                                        : `+${completionSuccess.pointsReward} XP earned for "${completionSuccess.title}"`}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -366,8 +434,25 @@ const StudentCourseDetail = () => {
                                             <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                                                 {isUpdating ? (
                                                     <Loader2 className="h-5 w-5 animate-spin text-[#4338ca]" />
-                                                ) : isCompleted ? (
-                                                    <span className="text-2xl">✅</span>
+                                                ) : status === 'mastered' ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-2xl">⭐</span>
+                                                        <button onClick={() => handleRestartTopic(topic)}
+                                                            className="inline-flex items-center gap-1 rounded-full border border-[#e2e8f0] px-3 py-1 text-xs font-medium text-[#475569] hover:bg-[#f1f5f9] transition">
+                                                            <RotateCcw className="h-3 w-3" /> Revise
+                                                        </button>
+                                                    </div>
+                                                ) : status === 'completed' ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <button onClick={() => handleMasterTopic(topic)}
+                                                            className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#f59e0b] to-[#d97706] px-3 py-1 text-xs font-semibold text-white hover:from-[#d97706] hover:to-[#b45309] transition">
+                                                            <Star className="h-3 w-3" /> Master
+                                                        </button>
+                                                        <button onClick={() => handleRestartTopic(topic)}
+                                                            className="inline-flex items-center gap-1 rounded-full border border-[#e2e8f0] px-3 py-1 text-xs font-medium text-[#475569] hover:bg-[#f1f5f9] transition">
+                                                            <RotateCcw className="h-3 w-3" /> Revise
+                                                        </button>
+                                                    </div>
                                                 ) : unlocked && status === 'not-started' ? (
                                                     <button onClick={() => { handleStartTopic(topic._id); openTopicReader(topic); }}
                                                         className="rounded-full bg-[#4338ca] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#312e81] transition">
