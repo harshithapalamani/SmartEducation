@@ -2,12 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import { coursesAPI, progressAPI } from '../services/api';
-import { ArrowLeft, BookOpen, Clock, CheckCircle, Loader2, FileText, Award, ChevronRight, File, Star, RotateCcw, WifiOff, Download } from 'lucide-react';
-import { useOnlineStatus } from '../hooks/useOffline';
+import { ArrowLeft, BookOpen, Clock, CheckCircle, Loader2, FileText, Award, ChevronRight, File, Star, RotateCcw } from 'lucide-react';
 import {
     getCourseOffline,
-    getTopicContentOffline,
-    saveCourseOffline
+    getTopicContentOffline
 } from '../services/offlineStorage';
 
 const STATUS_STYLES = {
@@ -19,20 +17,32 @@ const STATUS_STYLES = {
 
 const StudentCourseDetail = () => {
     const { courseId } = useParams();
-    const isOnline = useOnlineStatus();
     const [course, setCourse] = useState(null);
     const [topics, setTopics] = useState([]);
     const [progressMap, setProgressMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [updating, setUpdating] = useState(null);
-    const [offlineMode, setOfflineMode] = useState(false);
 
     // Reading view state
     const [readingTopic, setReadingTopic] = useState(null);
     const [topicContent, setTopicContent] = useState(null);
     const [contentLoading, setContentLoading] = useState(false);
     const [completionSuccess, setCompletionSuccess] = useState(null);
+
+    const loadFromOffline = useCallback(async () => {
+        try {
+            const offlineData = await getCourseOffline(courseId);
+            if (offlineData.course) {
+                setCourse(offlineData.course);
+                setTopics(offlineData.topics || []);
+            } else {
+                setError('Course not available offline. Download it first when online.');
+            }
+        } catch {
+            setError('Failed to load offline course data.');
+        }
+    }, [courseId]);
 
     const fetchData = useCallback(async () => {
         // Try online first
@@ -54,7 +64,6 @@ const StudentCourseDetail = () => {
                     });
                 }
                 setProgressMap(pMap);
-                setOfflineMode(false);
             } catch {
                 // Fallback to offline
                 await loadFromOffline();
@@ -63,22 +72,7 @@ const StudentCourseDetail = () => {
             await loadFromOffline();
         }
         setLoading(false);
-    }, [courseId]);
-
-    const loadFromOffline = async () => {
-        try {
-            const offlineData = await getCourseOffline(courseId);
-            if (offlineData.course) {
-                setCourse(offlineData.course);
-                setTopics(offlineData.topics || []);
-                setOfflineMode(true);
-            } else {
-                setError('Course not available offline. Download it first when online.');
-            }
-        } catch {
-            setError('Failed to load offline course data.');
-        }
-    };
+    }, [courseId, loadFromOffline]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
