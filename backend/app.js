@@ -33,6 +33,11 @@ app.use('/api/revisions', revisionRoutes);
 app.use('/api/gamification', gamificationRoutes);
 app.use('/api/ai', aiRoutes);
 
+// Root route (for Render health checks)
+app.get('/', (req, res) => {
+  res.json({ status: 'OK', message: 'Smart Education API is running' });
+});
+
 // Health check route
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Smart Education API is running' });
