@@ -40,6 +40,7 @@ const ManageUsers = () => {
 
     useEffect(() => {
         fetchUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showCredentials]);
 
     const fetchUsers = async () => {
