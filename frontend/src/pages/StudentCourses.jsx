@@ -2,7 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import { coursesAPI } from '../services/api';
-import { BookOpen, Users, Clock, ArrowRight, PlusCircle } from 'lucide-react';
+import { BookOpen, Users, Clock, ArrowRight, PlusCircle, WifiOff } from 'lucide-react';
+import { useOnlineStatus } from '../hooks/useOffline';
+import DownloadForOffline from '../components/DownloadForOffline';
+import {
+    saveCourseOffline,
+    getAllCoursesOffline,
+    removeCourseOffline
+} from '../services/offlineStorage';
 
 const DIFFICULTY_STYLES = {
     beginner: 'bg-[#dcfce7] text-[#166534]',
@@ -16,10 +23,26 @@ const StudentCourses = () => {
     const [loading, setLoading] = useState(true);
     const [enrolling, setEnrolling] = useState(null);
     const [error, setError] = useState('');
+    const [offlineMode, setOfflineMode] = useState(false);
+    const isOnline = useOnlineStatus();
 
     useEffect(() => { fetchAll(); }, []);
 
     const fetchAll = async () => {
+        if (!navigator.onLine) {
+            // Load from offline storage
+            try {
+                const offlineCourses = await getAllCoursesOffline();
+                setMyCourses(offlineCourses);
+                setAllCourses([]);
+                setOfflineMode(true);
+            } catch {
+                setError('Failed to load offline courses.');
+            } finally {
+                setLoading(false);
+            }
+            return;
+        }
         try {
             const [myRes, allRes] = await Promise.all([
                 coursesAPI.getMyCourses(),
@@ -27,10 +50,46 @@ const StudentCourses = () => {
             ]);
             setMyCourses(myRes.data?.courses || []);
             setAllCourses(allRes.data?.courses || []);
+            setOfflineMode(false);
         } catch {
-            setError('Failed to load courses.');
+            // Fallback to offline on network error
+            try {
+                const offlineCourses = await getAllCoursesOffline();
+                if (offlineCourses.length > 0) {
+                    setMyCourses(offlineCourses);
+                    setAllCourses([]);
+                    setOfflineMode(true);
+                } else {
+                    setError('Failed to load courses.');
+                }
+            } catch {
+                setError('Failed to load courses.');
+            }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDownloadCourse = async (course) => {
+        try {
+            // Fetch topics for the course
+            const topicsRes = await coursesAPI.getById(course._id);
+            const topics = topicsRes.data?.topics || [];
+
+            // Fetch all topic contents
+            const topicContents = [];
+            for (const topic of topics) {
+                try {
+                    const contentRes = await coursesAPI.getTopicContent(course._id, topic._id);
+                    topicContents.push({ topicId: topic._id, content: contentRes.data });
+                } catch {
+                    // Skip topics that fail to load
+                }
+            }
+
+            await saveCourseOffline(course, topics, topicContents);
+        } catch (err) {
+            throw new Error('Failed to download course');
         }
     };
 
@@ -81,6 +140,13 @@ const StudentCourses = () => {
                     <p className="mt-1 text-sm text-[#475569]">View enrolled courses, track progress, and discover new ones.</p>
                 </section>
 
+                {offlineMode && (
+                    <div className="rounded-2xl bg-[#fef3c7] p-4 text-sm text-[#92400e] flex items-center gap-2">
+                        <WifiOff className="h-4 w-4" />
+                        Showing downloaded courses (offline mode)
+                    </div>
+                )}
+
                 {error && <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
                 {/* Enrolled courses */}
@@ -110,10 +176,22 @@ const StudentCourses = () => {
                                             className="inline-flex items-center gap-1 text-xs font-semibold text-[#4338ca] hover:text-[#312e81]">
                                             Open course <ArrowRight className="h-3.5 w-3.5" />
                                         </Link>
-                                        <button onClick={() => handleUnenroll(course._id)} disabled={enrolling === course._id}
-                                            className="text-xs text-red-500 hover:text-red-700">
-                                            Unenroll
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            {isOnline && (
+                                                <DownloadForOffline
+                                                    type="course"
+                                                    entityId={course._id}
+                                                    onDownload={() => handleDownloadCourse(course)}
+                                                    onRemove={() => removeCourseOffline(course._id)}
+                                                />
+                                            )}
+                                            {!offlineMode && (
+                                                <button onClick={() => handleUnenroll(course._id)} disabled={enrolling === course._id}
+                                                    className="text-xs text-red-500 hover:text-red-700">
+                                                    Unenroll
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}

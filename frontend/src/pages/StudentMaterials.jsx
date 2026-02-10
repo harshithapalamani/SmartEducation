@@ -13,8 +13,19 @@ import {
     ChevronDown,
     User,
     Loader,
-    AlertCircle
+    AlertCircle,
+    WifiOff,
+    Download,
+    CheckCircle,
+    Trash2
 } from 'lucide-react';
+import { useOnlineStatus } from '../hooks/useOffline';
+import {
+    saveMaterialOffline,
+    getAllMaterialsOffline,
+    removeMaterialOffline,
+    isDownloaded as checkIsDownloaded
+} from '../services/offlineStorage';
 
 const StudentMaterials = () => {
     const [materials, setMaterials] = useState([]);
@@ -29,8 +40,24 @@ const StudentMaterials = () => {
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedMaterial, setSelectedMaterial] = useState(null);
     const [viewLoading, setViewLoading] = useState(false);
+    const [offlineMode, setOfflineMode] = useState(false);
+    const [downloadedIds, setDownloadedIds] = useState(new Set());
+    const isOnline = useOnlineStatus();
 
     const fetchMaterials = async (subject = '', topic = '') => {
+        if (!navigator.onLine) {
+            // Load from offline storage
+            try {
+                const offlineMaterials = await getAllMaterialsOffline();
+                setMaterials(offlineMaterials);
+                setOfflineMode(true);
+            } catch {
+                setError('Failed to load offline materials');
+            } finally {
+                setLoading(false);
+            }
+            return;
+        }
         try {
             const params = {};
             if (subject) params.subject = subject;
@@ -38,12 +65,55 @@ const StudentMaterials = () => {
 
             const response = await materialsAPI.getAll(params);
             setMaterials(response.data.materials || []);
+            setOfflineMode(false);
         } catch (error) {
             console.error('Error fetching materials:', error);
-            setError('Failed to load materials');
+            // Fallback to offline
+            try {
+                const offlineMaterials = await getAllMaterialsOffline();
+                if (offlineMaterials.length > 0) {
+                    setMaterials(offlineMaterials);
+                    setOfflineMode(true);
+                } else {
+                    setError('Failed to load materials');
+                }
+            } catch {
+                setError('Failed to load materials');
+            }
         } finally {
             setLoading(false);
         }
+    };
+
+    // Check which materials are downloaded
+    const refreshDownloadedIds = async (materialsList) => {
+        const ids = new Set();
+        for (const m of materialsList) {
+            const dl = await checkIsDownloaded('material', m._id);
+            if (dl) ids.add(m._id);
+        }
+        setDownloadedIds(ids);
+    };
+
+    const handleDownloadMaterial = async (material) => {
+        try {
+            // Fetch full material content
+            const response = await materialsAPI.getById(material._id);
+            const fullMaterial = response.data?.material || response.data;
+            await saveMaterialOffline(fullMaterial);
+            setDownloadedIds(prev => new Set([...prev, material._id]));
+        } catch (err) {
+            setError('Failed to download material');
+        }
+    };
+
+    const handleRemoveDownload = async (materialId) => {
+        await removeMaterialOffline(materialId);
+        setDownloadedIds(prev => {
+            const next = new Set(prev);
+            next.delete(materialId);
+            return next;
+        });
     };
 
     const fetchSubjects = async () => {
@@ -69,6 +139,12 @@ const StudentMaterials = () => {
         fetchSubjects();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        if (materials.length > 0) {
+            refreshDownloadedIds(materials);
+        }
+    }, [materials]);
 
     useEffect(() => {
         if (selectedSubject) {
@@ -126,11 +202,18 @@ const StudentMaterials = () => {
                             <p className="text-gray-300 text-sm font-medium">Available Materials</p>
                             <p className="text-4xl font-bold mt-1">{materials.length}</p>
                             <p className="text-gray-300 text-sm mt-2">
-                                {subjects.length} subjects • {hasActiveFilters ? 'Filtered' : 'All materials'}
+                                {subjects.length} subjects • {hasActiveFilters ? 'Filtered' : offlineMode ? 'Offline mode' : 'All materials'}
                             </p>
                         </div>
-                        <div className="p-4 bg-white/90 backdrop-blur rounded-2xl shadow-lg">
-                            <BookOpen className="w-10 h-10 text-gray-800" />
+                        <div className="flex items-center gap-3">
+                            {offlineMode && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fef3c7] px-3 py-1 text-xs font-medium text-[#92400e]">
+                                    <WifiOff className="h-3.5 w-3.5" /> Offline
+                                </span>
+                            )}
+                            <div className="p-4 bg-white/90 backdrop-blur rounded-2xl shadow-lg">
+                                <BookOpen className="w-10 h-10 text-gray-800" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -283,6 +366,34 @@ const StudentMaterials = () => {
                                         <Eye className="w-5 h-5" />
                                     </button>
                                 </div>
+
+                                {/* Download for offline button */}
+                                {isOnline && (
+                                    <div className="mb-3 flex items-center justify-end">
+                                        {downloadedIds.has(material._id) ? (
+                                            <div className="flex items-center gap-1">
+                                                <span className="inline-flex items-center gap-1 rounded-lg bg-[#dcfce7] px-2 py-1 text-xs font-medium text-[#166534]">
+                                                    <CheckCircle className="h-3.5 w-3.5" /> Offline
+                                                </span>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleRemoveDownload(material._id); }}
+                                                    className="p-1 text-gray-400 hover:text-red-500 rounded transition"
+                                                    title="Remove offline copy"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDownloadMaterial(material); }}
+                                                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-gray-500 hover:bg-[#ede9fe] hover:text-[#4338ca] transition"
+                                                title="Save for offline"
+                                            >
+                                                <Download className="h-3.5 w-3.5" /> Save Offline
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
 
                                 <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-black">
                                     {material.title}

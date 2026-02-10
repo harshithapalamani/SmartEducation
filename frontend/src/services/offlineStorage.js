@@ -1,0 +1,293 @@
+/**
+ * offlineStorage.js
+ * IndexedDB wrapper for storing courses, materials, and progress offline.
+ */
+
+const DB_NAME = 'SmartEduOffline';
+const DB_VERSION = 1;
+
+const STORES = {
+  COURSES: 'courses',
+  COURSE_TOPICS: 'courseTopics',
+  TOPIC_CONTENT: 'topicContent',
+  MATERIALS: 'materials',
+  PROGRESS: 'progress',
+  REVISIONS: 'revisions',
+  USER_DATA: 'userData',
+  DOWNLOADS: 'downloads' // tracks what was explicitly downloaded
+};
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+
+      if (!db.objectStoreNames.contains(STORES.COURSES)) {
+        db.createObjectStore(STORES.COURSES, { keyPath: '_id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.COURSE_TOPICS)) {
+        const store = db.createObjectStore(STORES.COURSE_TOPICS, { keyPath: 'courseId' });
+        store.createIndex('courseId', 'courseId', { unique: true });
+      }
+      if (!db.objectStoreNames.contains(STORES.TOPIC_CONTENT)) {
+        db.createObjectStore(STORES.TOPIC_CONTENT, { keyPath: 'topicId' });
+      }
+      if (!db.objectStoreNames.contains(STORES.MATERIALS)) {
+        db.createObjectStore(STORES.MATERIALS, { keyPath: '_id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.PROGRESS)) {
+        db.createObjectStore(STORES.PROGRESS, { keyPath: '_id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.REVISIONS)) {
+        db.createObjectStore(STORES.REVISIONS, { keyPath: '_id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.USER_DATA)) {
+        db.createObjectStore(STORES.USER_DATA, { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains(STORES.DOWNLOADS)) {
+        db.createObjectStore(STORES.DOWNLOADS, { keyPath: 'id' });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Generic helpers
+async function putItem(storeName, item) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    tx.objectStore(storeName).put(item);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function putItems(storeName, items) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    items.forEach((item) => store.put(item));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function getItem(storeName, key) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const req = tx.objectStore(storeName).get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getAllItems(storeName) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const req = tx.objectStore(storeName).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteItem(storeName, key) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    tx.objectStore(storeName).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ── Course offline storage ──────────────────────────────────────────
+
+export async function saveCourseOffline(course, topics, topicContents) {
+  // Save course info
+  await putItem(STORES.COURSES, {
+    ...course,
+    _offlineAt: new Date().toISOString()
+  });
+
+  // Save topics for this course
+  await putItem(STORES.COURSE_TOPICS, {
+    courseId: course._id,
+    topics,
+    _offlineAt: new Date().toISOString()
+  });
+
+  // Save each topic's content
+  if (topicContents && topicContents.length > 0) {
+    for (const tc of topicContents) {
+      await putItem(STORES.TOPIC_CONTENT, {
+        topicId: tc.topicId,
+        courseId: course._id,
+        content: tc.content,
+        _offlineAt: new Date().toISOString()
+      });
+    }
+  }
+
+  // Mark as downloaded
+  await putItem(STORES.DOWNLOADS, {
+    id: `course_${course._id}`,
+    type: 'course',
+    entityId: course._id,
+    title: course.title,
+    downloadedAt: new Date().toISOString(),
+    size: JSON.stringify({ course, topics, topicContents }).length
+  });
+}
+
+export async function getCourseOffline(courseId) {
+  const course = await getItem(STORES.COURSES, courseId);
+  const topicsData = await getItem(STORES.COURSE_TOPICS, courseId);
+  return { course, topics: topicsData?.topics || [] };
+}
+
+export async function getTopicContentOffline(topicId) {
+  return getItem(STORES.TOPIC_CONTENT, topicId);
+}
+
+export async function getAllCoursesOffline() {
+  return getAllItems(STORES.COURSES);
+}
+
+export async function removeCourseOffline(courseId) {
+  await deleteItem(STORES.COURSES, courseId);
+  await deleteItem(STORES.COURSE_TOPICS, courseId);
+  await deleteItem(STORES.DOWNLOADS, `course_${courseId}`);
+  // Also remove topic contents for this course
+  const allContent = await getAllItems(STORES.TOPIC_CONTENT);
+  for (const tc of allContent) {
+    if (tc.courseId === courseId) {
+      await deleteItem(STORES.TOPIC_CONTENT, tc.topicId);
+    }
+  }
+}
+
+// ── Materials offline storage ───────────────────────────────────────
+
+export async function saveMaterialOffline(material) {
+  await putItem(STORES.MATERIALS, {
+    ...material,
+    _offlineAt: new Date().toISOString()
+  });
+
+  await putItem(STORES.DOWNLOADS, {
+    id: `material_${material._id}`,
+    type: 'material',
+    entityId: material._id,
+    title: material.title,
+    downloadedAt: new Date().toISOString(),
+    size: JSON.stringify(material).length
+  });
+}
+
+export async function getMaterialOffline(materialId) {
+  return getItem(STORES.MATERIALS, materialId);
+}
+
+export async function getAllMaterialsOffline() {
+  return getAllItems(STORES.MATERIALS);
+}
+
+export async function removeMaterialOffline(materialId) {
+  await deleteItem(STORES.MATERIALS, materialId);
+  await deleteItem(STORES.DOWNLOADS, `material_${materialId}`);
+}
+
+// ── Progress offline storage ────────────────────────────────────────
+
+export async function saveProgressOffline(progressItems) {
+  await putItems(STORES.PROGRESS, progressItems.map(p => ({
+    ...p,
+    _offlineAt: new Date().toISOString()
+  })));
+}
+
+export async function getProgressOffline() {
+  return getAllItems(STORES.PROGRESS);
+}
+
+// ── Revisions offline storage ───────────────────────────────────────
+
+export async function saveRevisionsOffline(revisions) {
+  await putItems(STORES.REVISIONS, revisions.map(r => ({
+    ...r,
+    _offlineAt: new Date().toISOString()
+  })));
+}
+
+export async function getRevisionsOffline() {
+  return getAllItems(STORES.REVISIONS);
+}
+
+// ── Downloads tracking ──────────────────────────────────────────────
+
+export async function getDownloads() {
+  return getAllItems(STORES.DOWNLOADS);
+}
+
+export async function isDownloaded(type, entityId) {
+  const item = await getItem(STORES.DOWNLOADS, `${type}_${entityId}`);
+  return !!item;
+}
+
+export async function removeDownload(type, entityId) {
+  if (type === 'course') {
+    await removeCourseOffline(entityId);
+  } else if (type === 'material') {
+    await removeMaterialOffline(entityId);
+  }
+}
+
+// ── User data ───────────────────────────────────────────────────────
+
+export async function saveUserDataOffline(key, data) {
+  await putItem(STORES.USER_DATA, { key, data, _offlineAt: new Date().toISOString() });
+}
+
+export async function getUserDataOffline(key) {
+  const item = await getItem(STORES.USER_DATA, key);
+  return item?.data || null;
+}
+
+// ── Storage stats ───────────────────────────────────────────────────
+
+export async function getOfflineStorageStats() {
+  const downloads = await getDownloads();
+  const totalSize = downloads.reduce((sum, d) => sum + (d.size || 0), 0);
+  const courseCount = downloads.filter(d => d.type === 'course').length;
+  const materialCount = downloads.filter(d => d.type === 'material').length;
+
+  return {
+    totalDownloads: downloads.length,
+    courseCount,
+    materialCount,
+    totalSizeBytes: totalSize,
+    totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
+    downloads
+  };
+}
+
+// ── Clear all offline data ──────────────────────────────────────────
+
+export async function clearAllOfflineData() {
+  const db = await openDB();
+  const storeNames = Object.values(STORES);
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeNames, 'readwrite');
+    storeNames.forEach((name) => tx.objectStore(name).clear());
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}

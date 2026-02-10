@@ -2,7 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import { coursesAPI, progressAPI } from '../services/api';
-import { ArrowLeft, BookOpen, Clock, CheckCircle, Loader2, FileText, Award, ChevronRight, File, Star, RotateCcw } from 'lucide-react';
+import { ArrowLeft, BookOpen, Clock, CheckCircle, Loader2, FileText, Award, ChevronRight, File, Star, RotateCcw, WifiOff, Download } from 'lucide-react';
+import { useOnlineStatus } from '../hooks/useOffline';
+import {
+    getCourseOffline,
+    getTopicContentOffline,
+    saveCourseOffline
+} from '../services/offlineStorage';
 
 const STATUS_STYLES = {
     'mastered': { bg: 'bg-[#dcfce7]', text: 'text-[#166534]', label: 'Mastered' },
@@ -13,12 +19,14 @@ const STATUS_STYLES = {
 
 const StudentCourseDetail = () => {
     const { courseId } = useParams();
+    const isOnline = useOnlineStatus();
     const [course, setCourse] = useState(null);
     const [topics, setTopics] = useState([]);
     const [progressMap, setProgressMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [updating, setUpdating] = useState(null);
+    const [offlineMode, setOfflineMode] = useState(false);
 
     // Reading view state
     const [readingTopic, setReadingTopic] = useState(null);
@@ -27,29 +35,50 @@ const StudentCourseDetail = () => {
     const [completionSuccess, setCompletionSuccess] = useState(null);
 
     const fetchData = useCallback(async () => {
-        try {
-            const [courseRes, progressRes] = await Promise.all([
-                coursesAPI.getById(courseId),
-                progressAPI.getCourseProgress(courseId).catch(() => ({ data: { progress: [] } }))
-            ]);
-            setCourse(courseRes.data?.course || null);
-            setTopics(courseRes.data?.topics || []);
+        // Try online first
+        if (navigator.onLine) {
+            try {
+                const [courseRes, progressRes] = await Promise.all([
+                    coursesAPI.getById(courseId),
+                    progressAPI.getCourseProgress(courseId).catch(() => ({ data: { progress: [] } }))
+                ]);
+                setCourse(courseRes.data?.course || null);
+                setTopics(courseRes.data?.topics || []);
 
-            const pMap = {};
-            const progressArr = progressRes.data?.progress || [];
-            if (Array.isArray(progressArr)) {
-                progressArr.forEach(p => {
-                    const topicId = p.topic?._id || p.topic;
-                    if (topicId) pMap[topicId] = p;
-                });
+                const pMap = {};
+                const progressArr = progressRes.data?.progress || [];
+                if (Array.isArray(progressArr)) {
+                    progressArr.forEach(p => {
+                        const topicId = p.topic?._id || p.topic;
+                        if (topicId) pMap[topicId] = p;
+                    });
+                }
+                setProgressMap(pMap);
+                setOfflineMode(false);
+            } catch {
+                // Fallback to offline
+                await loadFromOffline();
             }
-            setProgressMap(pMap);
-        } catch {
-            setError('Failed to load course details.');
-        } finally {
-            setLoading(false);
+        } else {
+            await loadFromOffline();
         }
+        setLoading(false);
     }, [courseId]);
+
+    const loadFromOffline = async () => {
+        try {
+            const offlineData = await getCourseOffline(courseId);
+            if (offlineData.course) {
+                setCourse(offlineData.course);
+                setTopics(offlineData.topics || []);
+                setOfflineMode(true);
+            } else {
+                setError('Course not available offline. Download it first when online.');
+            }
+        } catch {
+            setError('Failed to load offline course data.');
+        }
+    };
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -57,14 +86,35 @@ const StudentCourseDetail = () => {
         setReadingTopic(topic);
         setContentLoading(true);
         setTopicContent(null);
-        try {
-            const res = await coursesAPI.getTopicContent(courseId, topic._id);
-            setTopicContent(res.data);
-        } catch {
-            setTopicContent({ error: 'Failed to load content' });
-        } finally {
-            setContentLoading(false);
+
+        // Try online first, fallback to offline
+        if (navigator.onLine) {
+            try {
+                const res = await coursesAPI.getTopicContent(courseId, topic._id);
+                setTopicContent(res.data);
+            } catch {
+                // Try offline fallback
+                const offlineContent = await getTopicContentOffline(topic._id);
+                if (offlineContent) {
+                    setTopicContent(offlineContent.content);
+                } else {
+                    setTopicContent({ error: 'Failed to load content' });
+                }
+            }
+        } else {
+            // Offline mode - get from IndexedDB
+            try {
+                const offlineContent = await getTopicContentOffline(topic._id);
+                if (offlineContent) {
+                    setTopicContent(offlineContent.content);
+                } else {
+                    setTopicContent({ error: 'Topic not available offline. Download the course while online.' });
+                }
+            } catch {
+                setTopicContent({ error: 'Failed to load offline content' });
+            }
         }
+        setContentLoading(false);
     };
 
     const closeReader = () => {

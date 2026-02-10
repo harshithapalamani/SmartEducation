@@ -25,11 +25,14 @@ import StudentLeaderboard from './pages/StudentLeaderboard';
 import StudentProfile from './pages/StudentProfile';
 import AIDoubtSupport from './pages/AIDoubtSupport';
 import Chatbot from './pages/Chatbot';
+import StudentOfflineDownloads from './pages/StudentOfflineDownloads';
+import OfflineIndicator from './components/OfflineIndicator';
 
 function App() {
     return (
         <AuthProvider>
             <Router>
+                <OfflineIndicator />
                 <Routes>
                     {/* Public Routes */}
                     <Route path="/" element={<Landing />} />
@@ -175,6 +178,14 @@ function App() {
                         element={
                             <ProtectedRoute allowedRoles={['student']}>
                                 <StudentProfile />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/student/offline-downloads"
+                        element={
+                            <ProtectedRoute allowedRoles={['student']}>
+                                <StudentOfflineDownloads />
                             </ProtectedRoute>
                         }
                     />
