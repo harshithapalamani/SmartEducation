@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import { coursesAPI } from '../services/api';
 import { BookOpen, Users, Clock, ArrowRight, PlusCircle, WifiOff } from 'lucide-react';
-import { useOnlineStatus } from '../hooks/useOffline';
 import DownloadForOffline from '../components/DownloadForOffline';
 import {
     saveCourseOffline,
@@ -24,7 +23,6 @@ const StudentCourses = () => {
     const [enrolling, setEnrolling] = useState(null);
     const [error, setError] = useState('');
     const [offlineMode, setOfflineMode] = useState(false);
-    const isOnline = useOnlineStatus();
 
     useEffect(() => { fetchAll(); }, []);
 
@@ -171,20 +169,21 @@ const StudentCourses = () => {
                                         <span className="flex items-center gap-1"><BookOpen className="h-3.5 w-3.5" /> {course.topicCount ?? 0} topics</span>
                                         <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {course.estimatedHours}h</span>
                                     </div>
-                                    <div className="mt-4 flex items-center justify-between">
+                                    <div className="mt-3">
+                                        <DownloadForOffline
+                                            type="course"
+                                            entityId={course._id}
+                                            onDownload={() => handleDownloadCourse(course)}
+                                            onRemove={() => removeCourseOffline(course._id)}
+                                            size="md"
+                                        />
+                                    </div>
+                                    <div className="mt-2 flex items-center justify-between">
                                         <Link to={`/student/courses/${course._id}`}
                                             className="inline-flex items-center gap-1 text-xs font-semibold text-[#4338ca] hover:text-[#312e81]">
                                             Open course <ArrowRight className="h-3.5 w-3.5" />
                                         </Link>
                                         <div className="flex items-center gap-2">
-                                            {isOnline && (
-                                                <DownloadForOffline
-                                                    type="course"
-                                                    entityId={course._id}
-                                                    onDownload={() => handleDownloadCourse(course)}
-                                                    onRemove={() => removeCourseOffline(course._id)}
-                                                />
-                                            )}
                                             {!offlineMode && (
                                                 <button onClick={() => handleUnenroll(course._id)} disabled={enrolling === course._id}
                                                     className="text-xs text-red-500 hover:text-red-700">

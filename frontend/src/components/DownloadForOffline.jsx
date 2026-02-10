@@ -19,12 +19,19 @@ const DownloadForOffline = ({ type, entityId, onDownload, onRemove, size = 'sm' 
 
     useEffect(() => {
         let cancelled = false;
-        checkDownloaded(type, entityId).then((val) => {
-            if (!cancelled) {
-                setDownloaded(val);
-                setChecking(false);
-            }
-        });
+        checkDownloaded(type, entityId)
+            .then((val) => {
+                if (!cancelled) {
+                    setDownloaded(val);
+                    setChecking(false);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setDownloaded(false);
+                    setChecking(false);
+                }
+            });
         return () => { cancelled = true; };
     }, [type, entityId]);
 
@@ -56,7 +63,13 @@ const DownloadForOffline = ({ type, entityId, onDownload, onRemove, size = 'sm' 
         }
     };
 
-    if (checking) return null;
+    if (checking) {
+        return (
+            <span className={`inline-flex items-center text-[#94a3b8] ${sizeClasses}`}>
+                <Loader2 className="animate-spin h-4 w-4" />
+            </span>
+        );
+    }
 
     const sizeClasses = size === 'sm'
         ? 'p-1.5 rounded-lg'
@@ -94,7 +107,7 @@ const DownloadForOffline = ({ type, entityId, onDownload, onRemove, size = 'sm' 
     return (
         <button
             onClick={handleDownload}
-            className={`inline-flex items-center text-[#475569] hover:text-[#4338ca] hover:bg-[#ede9fe] transition ${sizeClasses}`}
+            className={`inline-flex items-center text-[#4338ca] bg-[#ede9fe] hover:bg-[#ddd6fe] transition ${sizeClasses}`}
             title={`Download for offline`}
         >
             <Download className={size === 'sm' ? 'h-4 w-4' : 'h-4 w-4'} />
