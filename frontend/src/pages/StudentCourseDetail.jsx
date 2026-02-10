@@ -7,6 +7,7 @@ import {
     getCourseOffline,
     getTopicContentOffline,
     saveProgressItemOffline,
+    saveProgressOffline,
     getProgressForCourseOffline,
     queueProgressSync,
     getPendingSyncs,
@@ -45,7 +46,7 @@ const StudentCourseDetail = () => {
                 const offlineProgress = await getProgressForCourseOffline(courseId);
                 const pMap = {};
                 offlineProgress.forEach(p => {
-                    const topicId = p.topic || p._id?.replace('offline_', '');
+                    const topicId = p.topic || p._id;
                     if (topicId) pMap[topicId] = p;
                 });
                 setProgressMap(pMap);
@@ -99,6 +100,23 @@ const StudentCourseDetail = () => {
                     });
                 }
                 setProgressMap(pMap);
+
+                // Cache progress to IndexedDB for offline use
+                if (progressArr.length > 0) {
+                    try {
+                        const progressItems = progressArr.map(p => ({
+                            _id: p._id || `progress_${p.topic?._id || p.topic}`,
+                            topic: p.topic?._id || p.topic,
+                            courseId,
+                            status: p.status,
+                            masteryLevel: p.masteryLevel,
+                            timeSpentMinutes: p.timeSpentMinutes
+                        }));
+                        await saveProgressOffline(progressItems);
+                    } catch {
+                        // Cache save failed, continue normally
+                    }
+                }
             } catch {
                 // Fallback to offline
                 await loadFromOffline();

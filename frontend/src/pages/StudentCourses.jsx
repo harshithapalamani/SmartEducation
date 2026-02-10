@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/Layout/DashboardLayout';
-import { coursesAPI } from '../services/api';
+import { coursesAPI, progressAPI } from '../services/api';
 import { BookOpen, Users, Clock, ArrowRight, PlusCircle, WifiOff } from 'lucide-react';
 import DownloadForOffline from '../components/DownloadForOffline';
 import {
     saveCourseOffline,
     getAllCoursesOffline,
-    removeCourseOffline
+    removeCourseOffline,
+    saveProgressOffline
 } from '../services/offlineStorage';
 
 const DIFFICULTY_STYLES = {
@@ -86,6 +87,25 @@ const StudentCourses = () => {
             }
 
             await saveCourseOffline(course, topics, topicContents);
+
+            // Also save current progress for offline use
+            try {
+                const progressRes = await progressAPI.getCourseProgress(course._id);
+                const progressArr = progressRes.data?.progress || [];
+                if (progressArr.length > 0) {
+                    const progressItems = progressArr.map(p => ({
+                        _id: p._id || `progress_${p.topic?._id || p.topic}`,
+                        topic: p.topic?._id || p.topic,
+                        courseId: course._id,
+                        status: p.status,
+                        masteryLevel: p.masteryLevel,
+                        timeSpentMinutes: p.timeSpentMinutes
+                    }));
+                    await saveProgressOffline(progressItems);
+                }
+            } catch {
+                // Progress save failed, course content still saved
+            }
         } catch (err) {
             throw new Error('Failed to download course');
         }

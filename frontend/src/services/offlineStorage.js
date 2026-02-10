@@ -212,15 +212,19 @@ export async function removeMaterialOffline(materialId) {
 // ── Progress offline storage ────────────────────────────────────────
 
 export async function saveProgressOffline(progressItems) {
-  await putItems(STORES.PROGRESS, progressItems.map(p => ({
+  const items = progressItems.map(p => ({
     ...p,
+    // Ensure _id is set for IndexedDB keyPath
+    _id: p._id || p.topic || `progress_${Date.now()}`,
     _offlineAt: new Date().toISOString()
-  })));
+  }));
+  await putItems(STORES.PROGRESS, items);
 }
 
 export async function saveProgressItemOffline(topicId, courseId, data) {
+  // Use topicId as the primary key for consistency with server-cached progress
   await putItem(STORES.PROGRESS, {
-    _id: `offline_${topicId}`,
+    _id: topicId,
     topic: topicId,
     courseId,
     ...data,
