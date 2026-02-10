@@ -16,11 +16,13 @@ import {
     ArrowLeft,
     Menu,
     X,
-    Trophy
+    Trophy,
+    User
 } from 'lucide-react';
 
 const studentLinks = [
     { label: 'Dashboard', href: '/student', icon: LayoutDashboard },
+    { label: 'My Profile', href: '/student/profile', icon: User },
     { label: 'My Courses', href: '/student/courses', icon: BookOpen },
     { label: 'Knowledge Map', href: '/student/knowledge-map', icon: Map },
     { label: 'Revisions', href: '/student/revisions', icon: CalendarClock },
