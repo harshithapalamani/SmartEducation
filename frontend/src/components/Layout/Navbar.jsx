@@ -8,18 +8,18 @@ const Navbar = () => {
 
     return (
         <header className="fixed top-0 left-0 right-0 z-10 h-16 border-b border-gray-200 bg-white shadow-sm lg:left-64">
-            <div className="h-full px-6 flex items-center justify-between">
+            <div className="flex h-full items-center justify-between px-4 sm:px-6">
                 {/* Page Title */}
                 <div>
-                    <h2 className="text-xl font-semibold text-gray-800">
+                    <h2 className="text-lg font-semibold text-gray-800 sm:text-xl">
                         Welcome back, {user?.name?.split(' ')[0]}!
                     </h2>
                 </div>
 
                 {/* Right Section */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                     {/* Role Badge */}
-                    <span className="px-3 py-1 rounded-full text-sm font-medium capitalize bg-gray-100 text-gray-700">
+                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium capitalize text-gray-700 sm:px-3 sm:text-sm">
                         {user?.role}
                     </span>
 

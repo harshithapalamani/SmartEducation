@@ -126,33 +126,33 @@ const StudentDashboard = () => {
         <DashboardLayout>
             <div className="space-y-6">
                 {/* Welcome Header */}
-                <section className="rounded-[28px] bg-gradient-to-br from-[#ede9fe] via-[#f0f9ff] to-[#fef9c3] p-6 shadow-xl">
-                    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                            <h1 className="text-3xl font-semibold text-[#0f172a]">
+                <section className="rounded-[28px] bg-gradient-to-br from-[#ede9fe] via-[#f0f9ff] to-[#fef9c3] p-5 shadow-xl sm:p-6">
+                    <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                        <div className="space-y-2">
+                            <h1 className="text-2xl font-semibold text-[#0f172a] sm:text-3xl">
                                 Welcome back, {user?.name ?? 'Learner'} 👋
                             </h1>
-                            <p className="mt-2 text-sm text-[#475569]">
+                            <p className="text-sm text-[#475569] sm:text-base">
                                 {completedTopics > 0
                                     ? `You've completed ${completedTopics} out of ${totalTopics} topics. Keep going!`
                                     : 'Enroll in a course and start learning to earn XP points!'}
                             </p>
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                             <Link to="/student/courses"
-                                className="inline-flex items-center gap-2 rounded-full bg-[#4338ca] px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-[#312e81] transition">
-                                <BookOpen className="h-4 w-4" /> My Courses
+                                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#4338ca] px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-[#312e81]">
+                                <BookOpen className="h-4 w-4" /> <span>My Courses</span>
                             </Link>
                             <Link to="/student/leaderboard"
-                                className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#4338ca] shadow ring-1 ring-[#e2e8f0] hover:bg-[#f8fafc] transition">
-                                🏆 Leaderboard
+                                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#4338ca] shadow ring-1 ring-[#e2e8f0] transition hover:bg-[#f8fafc]">
+                                🏆 <span>Leaderboard</span>
                             </Link>
                         </div>
                     </div>
                 </section>
 
                 {/* Stats Cards */}
-                <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div className="rounded-[22px] bg-white p-5 shadow-lg ring-1 ring-[#e2e8f0]">
                         <div className="flex items-center justify-between">
                             <div>
@@ -192,13 +192,13 @@ const StudentDashboard = () => {
                 </section>
 
                 {/* My Courses Progress */}
-                <section className="rounded-[28px] bg-white p-6 shadow-xl ring-1 ring-[#e2e8f0]">
-                    <div className="flex items-center justify-between mb-5">
+                <section className="rounded-[28px] bg-white p-5 shadow-xl ring-1 ring-[#e2e8f0] sm:p-6">
+                    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-semibold text-[#0f172a]">My Courses</h2>
                             <p className="text-sm text-[#64748b]">Continue where you left off</p>
                         </div>
-                        <Link to="/student/courses" className="flex items-center gap-1 text-sm font-semibold text-[#4338ca] hover:text-[#312e81]">
+                        <Link to="/student/courses" className="flex items-center gap-1 text-sm font-semibold text-[#4338ca] transition hover:text-[#312e81]">
                             View all <ArrowRight className="h-4 w-4" />
                         </Link>
                     </div>
@@ -302,7 +302,7 @@ const StudentDashboard = () => {
 
                     {/* Badge Cabinet */}
                     <div className="rounded-[28px] bg-white p-6 shadow-xl ring-1 ring-[#e2e8f0]">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <h2 className="text-lg font-semibold text-[#0f172a]">Badge Cabinet</h2>
                             <Link to="/student/leaderboard" className="text-sm font-semibold text-[#4338ca] hover:text-[#312e81]">
                                 View all
@@ -336,15 +336,15 @@ const StudentDashboard = () => {
                 {/* Pending Revisions */}
                 {revisionPlan.length > 0 && (
                     <section className="rounded-[28px] bg-white p-6 shadow-xl ring-1 ring-[#e2e8f0]">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <h2 className="text-lg font-semibold text-[#0f172a]">Upcoming Revisions</h2>
                             <Link to="/student/revisions" className="flex items-center gap-1 text-sm font-semibold text-[#4338ca] hover:text-[#312e81]">
                                 View all <ArrowRight className="h-4 w-4" />
                             </Link>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             {revisionPlan.map((rev, i) => (
-                                <div key={i} className="flex items-center justify-between rounded-2xl bg-[#f8fafc] p-4 transition hover:bg-[#f1f5f9]">
+                                <div key={i} className="flex flex-col gap-3 rounded-2xl bg-[#f8fafc] p-4 transition hover:bg-[#f1f5f9] sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex items-center gap-3">
                                         <span className={`flex h-9 w-9 items-center justify-center rounded-full text-sm ${rev.isUrgent ? 'bg-[#fee2e2] text-[#b91c1c]' : 'bg-[#ede9fe] text-[#4338ca]'}`}>
                                             {rev.isUrgent ? '⚠️' : '📖'}
@@ -354,8 +354,8 @@ const StudentDashboard = () => {
                                             <p className="text-xs text-[#94a3b8]">{rev.priority} priority</p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className={`text-sm font-semibold ${rev.isUrgent ? 'text-[#b91c1c]' : 'text-[#475569]'}`}>{rev.next}</p>
+                                    <div className="text-sm font-semibold text-[#475569] sm:text-right">
+                                        <p className={rev.isUrgent ? 'text-[#b91c1c]' : ''}>{rev.next}</p>
                                     </div>
                                 </div>
                             ))}
@@ -364,9 +364,9 @@ const StudentDashboard = () => {
                 )}
 
                 {/* Quick Actions */}
-                <section className="rounded-[28px] bg-white p-6 shadow-xl ring-1 ring-[#e2e8f0]">
-                    <h2 className="text-lg font-semibold text-[#0f172a] mb-4">Quick Actions</h2>
-                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <section className="rounded-[28px] bg-white p-5 shadow-xl ring-1 ring-[#e2e8f0] sm:p-6">
+                    <h2 className="mb-4 text-lg font-semibold text-[#0f172a]">Quick Actions</h2>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                         <Link to="/student/courses" className="flex flex-col items-center gap-2 rounded-2xl bg-[#ede9fe] p-5 text-center transition hover:-translate-y-1 hover:shadow-lg">
                             <BookOpen className="h-6 w-6 text-[#4338ca]" />
                             <span className="text-xs font-semibold text-[#4338ca]">My Courses</span>

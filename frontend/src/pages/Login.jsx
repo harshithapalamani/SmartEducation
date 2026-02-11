@@ -58,14 +58,14 @@ const Login = () => {
         <div className="min-h-screen bg-[#f6f1eb]">
             <div className="mx-auto flex min-h-screen max-w-6xl flex-col-reverse overflow-hidden rounded-none bg-transparent lg:flex-row lg:rounded-[36px] lg:border lg:border-[#e2d7cb] lg:shadow-[0_30px_80px_rgba(15,23,42,0.15)]">
                 {/* Form side */}
-                <div className="flex w-full items-center justify-center bg-white px-6 py-12 sm:px-10 lg:w-[46%] lg:rounded-l-[36px]">
+                <div className="flex w-full items-center justify-center bg-white px-5 py-12 sm:px-10 lg:w-[46%] lg:rounded-l-[36px]">
                     <div className="w-full max-w-md">
                         <div className="mb-8 text-center lg:text-left">
                             <span className="inline-flex items-center gap-2 rounded-full bg-[#ebe4ff] px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[#4338ca]">
                                 Personalized Login
                             </span>
-                            <h2 className="mt-4 text-3xl font-semibold text-[#0f172a]">Welcome back to your adaptive hub</h2>
-                            <p className="mt-2 text-sm text-[#475569]">
+                            <h2 className="mt-4 text-2xl font-semibold text-[#0f172a] sm:text-3xl">Welcome back to your adaptive hub</h2>
+                            <p className="mt-2 text-sm text-[#475569] sm:text-base">
                                 Sign in to continue growing your knowledge map and stay ahead of every revision window.
                             </p>
                         </div>
@@ -74,7 +74,7 @@ const Login = () => {
                             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#64748b] text-center lg:text-left">
                                 Quick demo roles
                             </p>
-                            <div className="mt-3 grid grid-cols-3 gap-3">
+                            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                                 {[
                                     { role: 'admin', label: 'Admin' },
                                     { role: 'teacher', label: 'Teacher' },
@@ -83,11 +83,10 @@ const Login = () => {
                                     <button
                                         key={item.role}
                                         onClick={() => quickLogin(item.role)}
-                                        className={`rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
-                                            selectedRole === item.role
+                                        className={`rounded-2xl border px-3 py-2 text-sm font-semibold transition ${selectedRole === item.role
                                                 ? 'border-[#4338ca] bg-[#ece7ff] text-[#312e81] shadow-sm'
                                                 : 'border-[#e2e8f0] bg-[#f8fafc] text-[#475569] hover:border-[#cbd5f5]'
-                                        }`}
+                                            }`}
                                     >
                                         {item.label}
                                     </button>
@@ -198,15 +197,15 @@ const Login = () => {
                 {/* Visual side */}
                 <div className="relative flex w-full items-center justify-center bg-[#f1e9ff] px-6 py-16 lg:w-[54%] lg:rounded-r-[36px]">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(67,56,202,0.25),transparent_55%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.35),transparent_50%)]" />
-                    <div className="relative z-10 max-w-xl space-y-10 text-[#0f172a]">
-                        <div className="inline-flex items-center gap-3 rounded-full bg-white/80 px-5 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-[#4338ca] shadow">
+                    <div className="relative z-10 max-w-xl space-y-10 px-2 text-[#0f172a] sm:px-0">
+                        <div className="inline-flex items-center gap-3 rounded-full bg-white/80 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#4338ca] shadow sm:px-5 sm:text-xs">
                             <span className="h-2 w-2 rounded-full bg-[#10b981]" />
                             Live knowledge map in action
                         </div>
-                        <h1 className="text-4xl font-semibold leading-tight">
+                        <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
                             Personalized Knowledge Mapping & Adaptive Revision Engine
                         </h1>
-                        <p className="text-sm leading-relaxed text-[#475569]">
+                        <p className="text-sm leading-relaxed text-[#475569] sm:text-base">
                             Watch every quiz attempt, reflection and study sprint update the learner’s map, predict forgetting, and schedule targeted revision moments. This is how mastery feels effortless.
                         </p>
                         <div className="grid gap-4 sm:grid-cols-2">

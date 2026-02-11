@@ -183,7 +183,7 @@ const DashboardLayout = ({ children }) => {
             <div className="lg:ml-64">
                 <Navbar />
                 <main className="min-h-screen pt-20">
-                    <div className="px-6 pb-10 xl:px-12">{children}</div>
+                    <div className="px-4 pb-10 sm:px-6 xl:px-12">{children}</div>
                 </main>
             </div>
         </div>

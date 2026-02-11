@@ -132,7 +132,7 @@ const Landing = () => {
         <div className="min-h-screen bg-[#f7f3ef] text-[#111827]">
             <header className="relative overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(100,116,255,0.16),transparent_55%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.18),transparent_45%)]" />
-                <nav className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-8">
+                <nav className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-8">
                     <Link to="/" className="flex items-center gap-3">
                         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1e293b] text-[#f7f3ef] shadow-lg">
                             <span className="text-lg font-semibold">PK</span>
@@ -144,23 +144,23 @@ const Landing = () => {
                             </p>
                         </div>
                     </Link>
-                    <div className="flex items-center gap-4 text-sm font-semibold">
+                    <div className="flex flex-col items-stretch gap-3 text-sm font-semibold sm:flex-row sm:items-center sm:gap-4">
                         <Link
                             to="/login"
-                            className="rounded-full border border-[#334155]/40 px-5 py-2 text-[#334155] transition hover:border-[#1e293b] hover:text-[#1e293b]"
+                            className="rounded-full border border-[#334155]/40 px-5 py-2 text-center text-[#334155] transition hover:border-[#1e293b] hover:text-[#1e293b]"
                         >
                             Sign in
                         </Link>
                         <Link
                             to="/login"
-                            className="rounded-full bg-[#3b82f6] px-5 py-2 text-[#f7f3ef] shadow-lg shadow-[#3b82f6]/40 transition hover:bg-[#2563eb]"
+                            className="rounded-full bg-[#3b82f6] px-5 py-2 text-center text-[#f7f3ef] shadow-lg shadow-[#3b82f6]/40 transition hover:bg-[#2563eb]"
                         >
                             Launch platform
                         </Link>
                     </div>
                 </nav>
 
-                <section className="relative z-10 mx-auto grid max-w-6xl gap-12 px-6 pb-24 pt-12 lg:grid-cols-[minmax(0,1.05fr),minmax(0,0.95fr)] lg:pb-32">
+                <section className="relative z-10 mx-auto grid max-w-6xl gap-12 px-4 pb-20 pt-12 sm:px-6 lg:grid-cols-[minmax(0,1.05fr),minmax(0,0.95fr)] lg:pb-32">
                     <div className="flex flex-col gap-10">
                         <div className="space-y-6">
                             <span className="inline-flex items-center gap-2 rounded-full bg-white/60 px-4 py-1 text-xs font-semibold uppercase tracking-[0.32em] text-[#334155]">
@@ -174,7 +174,7 @@ const Landing = () => {
                             </p>
                         </div>
 
-                        <div className="flex flex-wrap gap-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
                             <Link
                                 to="/login"
                                 className="rounded-full bg-[#4338ca] px-6 py-3 text-base font-semibold text-[#f8fafc] shadow-xl shadow-[#4338ca]/35 transition hover:-translate-y-1 hover:bg-[#312e81]"
