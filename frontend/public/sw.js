@@ -1,8 +1,8 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_NAME = 'smart-edu-v3';
-const STATIC_CACHE = 'smart-edu-static-v3';
-const API_CACHE = 'smart-edu-api-v3';
+const CACHE_NAME = 'smart-edu-v4';
+const STATIC_CACHE = 'smart-edu-static-v4';
+const API_CACHE = 'smart-edu-api-v4';
 
 // Static assets to pre-cache on install
 const PRECACHE_URLS = [
