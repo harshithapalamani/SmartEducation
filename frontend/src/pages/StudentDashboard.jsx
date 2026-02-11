@@ -101,6 +101,8 @@ const StudentDashboard = () => {
     const totalTopics = progressStats?.totalTopics ?? 0;
     const completedTopics = (progressStats?.completed ?? 0) + (progressStats?.mastered ?? 0);
     const overallPercent = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+    const initial = user?.name?.charAt(0)?.toUpperCase() ?? '?';
+    const streakLabel = `${streakDays || 0} day${streakDays === 1 ? '' : 's'} streak`;
 
     const badges = useMemo(() => {
         if (!gamification?.badges?.length) return [];
@@ -126,25 +128,47 @@ const StudentDashboard = () => {
         <DashboardLayout>
             <div className="space-y-6">
                 {/* Welcome Header */}
-                <section className="rounded-[28px] bg-gradient-to-br from-[#ede9fe] via-[#f0f9ff] to-[#fef9c3] p-5 shadow-xl sm:p-6">
-                    <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                        <div className="space-y-2">
-                            <h1 className="text-2xl font-semibold text-[#0f172a] sm:text-3xl">
-                                Welcome back, {user?.name ?? 'Learner'} 👋
-                            </h1>
-                            <p className="text-sm text-[#475569] sm:text-base">
-                                {completedTopics > 0
-                                    ? `You've completed ${completedTopics} out of ${totalTopics} topics. Keep going!`
-                                    : 'Enroll in a course and start learning to earn XP points!'}
-                            </p>
+                <section className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#0f172a] via-[#1e3a8a] to-[#312e81] p-6 text-white shadow-2xl sm:p-7">
+                    <div className="pointer-events-none absolute -left-24 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-white/10 blur-3xl" />
+                    <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-start gap-4">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-white/20 text-2xl font-semibold text-white sm:h-16 sm:w-16">
+                                {initial}
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs uppercase tracking-[0.28em] text-white/70">Student Portal</p>
+                                <h1 className="text-2xl font-semibold sm:text-3xl">{user?.name ?? 'Learner'}</h1>
+                                <p className="text-sm text-white/70">{user?.email}</p>
+                            </div>
                         </div>
+                        <div className="grid w-full grid-cols-1 gap-3 sm:w-auto sm:grid-cols-3">
+                            <div className="rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold text-white shadow-inner">
+                                <p className="text-xs uppercase tracking-[0.28em] text-white/60">Level</p>
+                                <p className="mt-1 text-lg">{level}</p>
+                            </div>
+                            <div className="rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold text-white shadow-inner">
+                                <p className="text-xs uppercase tracking-[0.28em] text-white/60">Total XP</p>
+                                <p className="mt-1 text-lg">{xp.toLocaleString()}</p>
+                            </div>
+                            <div className="rounded-2xl bg-white/15 px-4 py-2 text-sm font-semibold text-white shadow-inner">
+                                <p className="text-xs uppercase tracking-[0.28em] text-white/60">Streak</p>
+                                <p className="mt-1 text-lg">{streakLabel}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm text-white/80 sm:max-w-xl">
+                            {completedTopics > 0
+                                ? `You've completed ${completedTopics} of ${totalTopics} topics. Keep the momentum going!`
+                                : 'Enroll in a course and start learning to build your mastery map.'}
+                        </p>
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                             <Link to="/student/courses"
-                                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#4338ca] px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-[#312e81]">
-                                <BookOpen className="h-4 w-4" /> <span>My Courses</span>
+                                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1e3a8a] shadow transition hover:bg-[#e8edff]">
+                                <BookOpen className="h-4 w-4" /> <span>Browse Courses</span>
                             </Link>
                             <Link to="/student/leaderboard"
-                                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#4338ca] shadow ring-1 ring-[#e2e8f0] transition hover:bg-[#f8fafc]">
+                                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/60 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10">
                                 🏆 <span>Leaderboard</span>
                             </Link>
                         </div>
